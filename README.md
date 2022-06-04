@@ -32,7 +32,7 @@
   "dependencies":
   {
     ...
-    "FronkonGames.GameWork.Modules.SceneModule": "git+https://github.com/FronkonGames/GameWork-Data-Persistence.git",
+    "FronkonGames.GameWork.Modules.DataPersistence": "git+https://github.com/FronkonGames/GameWork-Data-Persistence.git",
     "FronkonGames.GameWork.Core": "git+https://github.com/FronkonGames/GameWork-Core.git",
     "FronkonGames.GameWork.Foundation": "git+https://github.com/FronkonGames/GameWork-Foundation.git"
   }

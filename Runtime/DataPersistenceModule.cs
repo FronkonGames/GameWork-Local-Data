@@ -14,7 +14,8 @@
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-using System;
+//#define ENABLE_PROFILING
+using System.Collections.Generic;
 using UnityEngine;
 using FronkonGames.GameWork.Core;
 using FronkonGames.GameWork.Foundation;
@@ -25,7 +26,8 @@ namespace FronkonGames.GameWork.Modules.DataPersistence
   /// .
   /// </summary>
   public sealed class DataPersistenceModule : MonoBehaviourModule,
-                                              IInitializable
+                                              IInitializable,
+                                              ISceneLoad
   {
     /// <summary>
     /// Is it initialized?
@@ -33,11 +35,22 @@ namespace FronkonGames.GameWork.Modules.DataPersistence
     /// <value>Value</value>
     public bool Initialized { get; set; }
 
+    [SerializeField, String("game.data", "Data file name.")]
+    private string fileName;
+
+    [SerializeField, Bool(false, "Use encrypted data.")]
+    private bool encrypted;
+
+    private IDataHandler dataHandler;
+
+    private List<IDataPersistence> dataPersistenceObjects = new List<IDataPersistence>();
+
     /// <summary>
     /// When initialize.
     /// </summary>
     public void OnInitialize()
     {
+      dataHandler = new LocalDataHandler();
     }
 
     /// <summary>
@@ -53,6 +66,56 @@ namespace FronkonGames.GameWork.Modules.DataPersistence
     /// </summary>
     public void OnDeinitialize()
     {
+    }
+
+    /// <summary>
+    /// Scene is loaded.
+    /// </summary>
+    public void OnSceneLoad(int sceneBuildIndex)
+    {
+      UpdatePersistenceDataObjects();
+
+      LoadPersistenceData();
+    }
+
+    /// <summary>
+    /// Scene is unloaded.
+    /// </summary>
+    public void OnSceneUnload() => SavePersistenceData();
+
+    private void UpdatePersistenceDataObjects()
+    {
+#if ENABLE_PROFILING
+      using (Profiling.Time("Find persistence data"))
+#endif
+      {
+        dataPersistenceObjects.Clear();
+
+        MonoBehaviour[] monoBehaviours = FindObjectsOfType<MonoBehaviour>();
+        for (int i = 0; i < monoBehaviours.Length; ++i)
+        {
+          if (monoBehaviours[i] is IDataPersistence)
+            dataPersistenceObjects.Add(monoBehaviours[i] as IDataPersistence);
+        }
+      }
+    }
+
+    private void SavePersistenceData()
+    {
+#if ENABLE_PROFILING
+      using (Profiling.Time("Save persistence data"))
+#endif
+      {
+      }
+    }
+
+    private void LoadPersistenceData()
+    {
+#if ENABLE_PROFILING
+      using (Profiling.Time("Load persistence data"))
+#endif
+      {
+      }
     }
   }
 }
