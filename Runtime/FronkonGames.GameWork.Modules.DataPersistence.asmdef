@@ -1,0 +1,16 @@
+﻿{
+  "name": "FronkonGames.GameWork.Modules.DataPersistence",
+  "references":
+  [
+    "FronkonGames.GameWork.Core",
+    "FronkonGames.GameWork.Foundation"
+  ],
+  "optionalUnityReferences": [],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": []
+}
