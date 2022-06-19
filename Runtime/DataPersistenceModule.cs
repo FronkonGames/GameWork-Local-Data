@@ -38,6 +38,9 @@ namespace FronkonGames.GameWork.Modules.DataPersistence
     [SerializeField, String("game.data", "Data file name.")]
     private string fileName;
 
+    [SerializeField, Bool(false, "Use compressed data.")]
+    private bool compress;
+
     [SerializeField, Bool(false, "Use encrypted data.")]
     private bool encrypted;
 
