@@ -35,13 +35,13 @@ namespace FronkonGames.GameWork.Modules.DataPersistence
     /// <value>Value</value>
     public bool Initialized { get; set; }
 
-    [SerializeField, String("game.data", "Data file name.")]
-    private string fileName;
+    [SerializeField, Tooltip("Data file name.")]
+    private string fileName = "game.data";
 
-    [SerializeField, Bool(false, "Use compressed data.")]
+    [SerializeField, Tooltip("Use compressed data.")]
     private bool compress;
 
-    [SerializeField, Bool(false, "Use encrypted data.")]
+    [SerializeField, Tooltip("Use encrypted data.")]
     private bool encrypted;
 
     private IDataHandler dataHandler;
