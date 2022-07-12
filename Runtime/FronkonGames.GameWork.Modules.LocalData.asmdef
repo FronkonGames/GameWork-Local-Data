@@ -1,5 +1,5 @@
 ﻿{
-  "name": "FronkonGames.GameWork.Modules.DataPersistence",
+  "name": "FronkonGames.GameWork.Modules.LocalData",
   "references":
   [
     "FronkonGames.GameWork.Core",

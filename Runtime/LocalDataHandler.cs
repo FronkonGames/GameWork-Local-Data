@@ -21,7 +21,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using FronkonGames.GameWork.Foundation;
 using UnityEngine;
 
-namespace FronkonGames.GameWork.Modules.DataPersistence
+namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
   /// .
@@ -31,7 +31,7 @@ namespace FronkonGames.GameWork.Modules.DataPersistence
     private readonly string gamePath;
 
     private const int BufferSize = 1024 * 4;
-    
+
     public LocalDataHandler()
     {
       if (string.IsNullOrEmpty(Application.companyName) == false)
@@ -70,7 +70,7 @@ namespace FronkonGames.GameWork.Modules.DataPersistence
     /// <param name="data"></param>
     /// <param name="slot"></param>
     /// <typeparam name="T"></typeparam>
-    public async void Save<T>(T data, int slot) where T : LocalData
+    public async void Save<T>(T data, int slot) where T : LocalFile
     {
       Check.IsNotNull(data);
       Check.IsWithin(slot, 0, 9999);
@@ -105,7 +105,7 @@ namespace FronkonGames.GameWork.Modules.DataPersistence
     /// <param name="slot"></param>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    public async Task<T> Load<T>(int slot) where T : LocalData
+    public async Task<T> Load<T>(int slot) where T : LocalFile
     {
       Check.IsWithin(slot, 0, 9999);
 
@@ -186,7 +186,7 @@ namespace FronkonGames.GameWork.Modules.DataPersistence
       return success;
     }
 
-    private byte[] ToBytes<T>(T data) where T : LocalData 
+    private byte[] ToBytes<T>(T data) where T : LocalFile 
     {
       BinaryFormatter binaryFormatter = new BinaryFormatter();
       using (MemoryStream memoryStream = new MemoryStream())
@@ -196,7 +196,7 @@ namespace FronkonGames.GameWork.Modules.DataPersistence
       }
     }
 
-    private T FromBytes<T>(byte[] data) where T : LocalData
+    private T FromBytes<T>(byte[] data) where T : LocalFile
     {
       using (MemoryStream memoryStream = new MemoryStream(data))
       {

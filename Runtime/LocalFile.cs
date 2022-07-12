@@ -16,13 +16,13 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 using System;
 
-namespace FronkonGames.GameWork.Modules.DataPersistence
+namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
   /// .
   /// </summary>
   [Serializable]
-  public abstract class LocalData
+  public abstract class LocalFile
   {
     public string Firm => "GAWO";
 

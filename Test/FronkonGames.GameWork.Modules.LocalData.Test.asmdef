@@ -1,7 +1,7 @@
 {
-  "name": "FronkonGames.GameWork.Modules.DataPersistence.Test",
+  "name": "FronkonGames.GameWork.Modules.LocalData.Test",
   "references": [
-    "FronkonGames.GameWork.Modules.DataPersistence",
+    "FronkonGames.GameWork.Modules.LocalData",
     "FronkonGames.GameWork.Core",
     "FronkonGames.GameWork.Foundation"
   ],

@@ -1,14 +1,14 @@
-<p align="center"><b>Data Persistence Module</b></p>
+<p align="center"><b>Local Data Module</b></p>
 <br>
 <p align="center">
   <a style="text-decoration:none">
-    <img src="https://img.shields.io/github/package-json/v/FronkonGames/GameWork-Data-Persistence?style=flat-square" alt="version" />
+    <img src="https://img.shields.io/github/package-json/v/FronkonGames/GameWork-Local-Data?style=flat-square" alt="version" />
   </a>  
   <a style="text-decoration:none">
-    <img src="https://img.shields.io/github/license/FronkonGames/GameWork-Data-Persistence?style=flat-square" alt="license" />
+    <img src="https://img.shields.io/github/license/FronkonGames/GameWork-Local-Data?style=flat-square" alt="license" />
   </a>
   <a style="text-decoration:none">
-    <img src="https://img.shields.io/github/languages/top/FronkonGames/GameWork-Data-Persistence?style=flat-square" alt="top language" />
+    <img src="https://img.shields.io/github/languages/top/FronkonGames/GameWork-Local-Data?style=flat-square" alt="top language" />
   </a>
 </p>
 
@@ -32,7 +32,7 @@
   "dependencies":
   {
     ...
-    "FronkonGames.GameWork.Modules.DataPersistence": "git+https://github.com/FronkonGames/GameWork-Data-Persistence.git",
+    "FronkonGames.GameWork.Modules.SaveData": "git+https://github.com/FronkonGames/GameWork-Local-Data.git",
     "FronkonGames.GameWork.Core": "git+https://github.com/FronkonGames/GameWork-Core.git",
     "FronkonGames.GameWork.Foundation": "git+https://github.com/FronkonGames/GameWork-Foundation.git"
   }

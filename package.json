@@ -1,8 +1,8 @@
 {
-  "name": "com.frokongames.gamework.modules.datapersistence",
+  "name": "com.frokongames.gamework.modules.localdata",
   "version": "0.0.1",
-  "displayName": "Game:Work Data Persistence",
-  "decription": "Data Persistence module.",
+  "displayName": "Game:Work Local Data",
+  "decription": "Local data module.",
   "references": [ ],
   "unity": "2020.3",
   "unityRelease": "26f1",
@@ -20,7 +20,7 @@
   "repository":
   {
     "type": "git",
-    "url": "git+https://github.com/FronkonGames/GameWork-Data-Persistence.git"
+    "url": "git+https://github.com/FronkonGames/GameWork-Local-Data.git"
   },  
   "author":
   {

@@ -20,14 +20,13 @@ using UnityEngine;
 using FronkonGames.GameWork.Core;
 using FronkonGames.GameWork.Foundation;
 
-namespace FronkonGames.GameWork.Modules.DataPersistence
+namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
   /// .
   /// </summary>
-  public sealed class DataPersistenceModule : MonoBehaviourModule,
-                                              IInitializable,
-                                              ISceneLoad
+  public sealed class LocalDataModule : MonoBehaviourModule,
+                                        IInitializable
   {
     /// <summary>
     /// Is it initialized?
@@ -35,18 +34,16 @@ namespace FronkonGames.GameWork.Modules.DataPersistence
     /// <value>Value</value>
     public bool Initialized { get; set; }
 
-    [SerializeField, Tooltip("Data file name.")]
+    [SerializeField, Tooltip("Data file name."), OnlyEnableInEdit]
     private string fileName = "game.data";
 
-    [SerializeField, Tooltip("Use compressed data.")]
+    [SerializeField, Tooltip("Use compressed data."), OnlyEnableInEdit]
     private bool compress;
 
-    [SerializeField, Tooltip("Use encrypted data.")]
+    [SerializeField, Tooltip("Use encrypted data."), OnlyEnableInEdit]
     private bool encrypted;
 
     private IDataHandler dataHandler;
-
-    private List<IDataPersistence> dataPersistenceObjects = new List<IDataPersistence>();
 
     /// <summary>
     /// When initialize.
@@ -69,47 +66,6 @@ namespace FronkonGames.GameWork.Modules.DataPersistence
     /// </summary>
     public void OnDeinitialize()
     {
-    }
-
-    /// <summary>
-    /// Scene is loaded.
-    /// </summary>
-    public void OnSceneLoad(int sceneBuildIndex)
-    {
-      UpdatePersistenceDataObjects();
-
-      LoadPersistenceData();
-    }
-
-    /// <summary>
-    /// Scene is unloaded.
-    /// </summary>
-    public void OnSceneUnload() => SavePersistenceData();
-
-    private void UpdatePersistenceDataObjects()
-    {
-#if ENABLE_PROFILING
-      using (Profiling.Time("Find persistence data"))
-#endif
-      {
-        dataPersistenceObjects.Clear();
-
-        MonoBehaviour[] monoBehaviours = FindObjectsOfType<MonoBehaviour>();
-        for (int i = 0; i < monoBehaviours.Length; ++i)
-        {
-          if (monoBehaviours[i] is IDataPersistence)
-            dataPersistenceObjects.Add(monoBehaviours[i] as IDataPersistence);
-        }
-      }
-    }
-
-    private void SavePersistenceData()
-    {
-#if ENABLE_PROFILING
-      using (Profiling.Time("Save persistence data"))
-#endif
-      {
-      }
     }
 
     private void LoadPersistenceData()

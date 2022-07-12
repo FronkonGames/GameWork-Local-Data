@@ -17,18 +17,18 @@
 using System.Collections;
 using NUnit.Framework;
 using UnityEngine.TestTools;
-using FronkonGames.GameWork.Modules.DataPersistence;
+using FronkonGames.GameWork.Modules.LocalData;
 
 /// <summary>
-/// Data Persistence test.
+/// Local Data test.
 /// </summary>
-public partial class DataPersistenceTests
+public class LocalDataTests
 {
   /// <summary>
-  /// Data Persistence test.
+  /// Save Data test.
   /// </summary>
   [UnityTest]
-  public IEnumerator DataPersistence()
+  public IEnumerator SaveData()
   {
     yield return null;
   }
