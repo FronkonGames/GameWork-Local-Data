@@ -24,10 +24,10 @@ namespace FronkonGames.GameWork.Modules.LocalData
   [Serializable]
   public abstract class LocalFile
   {
-    public string Firm => "GAWO";
+    public string firm = "GAWO";
 
-    public int Version { get; set; }
+    public int version;
 
-    public uint CRC { get; set; }
+    public uint CRC;
   }
 }
