@@ -23,6 +23,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using UnityEngine;
 using FronkonGames.GameWork.Core;
 using FronkonGames.GameWork.Foundation;
+using UnityEditor.Experimental.GraphView;
 
 namespace FronkonGames.GameWork.Modules.LocalData
 {
@@ -42,27 +43,25 @@ namespace FronkonGames.GameWork.Modules.LocalData
     
     [Title("Settings")]
 
-    [SerializeField, Indent, Tooltip("Buffer size, in KB."), Range(1, 32), OnlyEnableInEdit]
-    private int bufferSize = 4;
-
-    [SerializeField, Tooltip("Use compressed data."), OnlyEnableInEdit, Indent]
+    [SerializeField, Label("Compress data"), Indent, OnlyEnableInEdit]
     private bool compress;
 
-    [SerializeField, Tooltip("Use encrypted data."), OnlyEnableInEdit, Indent]
+    [SerializeField, Label("Encrypt data"), Indent, OnlyEnableInEdit]
     private bool encrypted;
+
+    [Title("Streams")]
+
+    [SerializeField, Label("Buffer size (KB)"), Indent, Range(1, 32), OnlyEnableInEdit]
+    private int bufferSize = 4;
 
     /// <summary>
     /// When initialize.
     /// </summary>
     public void OnInitialize()
     {
-      if (string.IsNullOrEmpty(Application.companyName) == false)
-        Path = Application.companyName.RemoveInvalidFileCharacters();
-
-      if (string.IsNullOrEmpty(Application.productName) == false)
-        Path += (string.IsNullOrEmpty(Path) == false ? "/" : "") + Application.productName.RemoveInvalidFileCharacters() + "/";
+      Path = ComposePath();
       
-      Log.Info($"Using path '{ComposePath("")}'");
+      Log.Info($"Using path '{Path}'");
     }
 
     /// <summary>
@@ -83,16 +82,43 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// <summary>
     /// 
     /// </summary>
+    /// <param name="searchPattern"></param>
+    /// <param name="recursive"></param>
+    /// <returns></returns>
+    public List<FileInfo> Files(string searchPattern = "*.*", bool recursive = false)
+    {
+      List<FileInfo> files = new List<FileInfo>();
+
+      try
+      {
+        if (Directory.Exists(Path) == true)
+        {
+          string[] fileNames = Directory.GetFiles(Path, searchPattern, recursive == true ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
+          for (int i = 0; i < fileNames.Length; ++i)
+            files.Add(new FileInfo(fileNames[i]));
+        }
+      }
+      catch (Exception e)
+      {
+        Log.Exception(e.ToString());
+      }
+
+      return files;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
     /// <param name="slot"></param>
     /// <returns></returns>
-    public bool Exists(string filePath)
+    public bool Exists(string file)
     {
-      Check.IsNotNullOrEmpty(filePath);
+      Check.IsNotNullOrEmpty(file);
       bool success = false;
 
       try
       {
-        if (new FileInfo(ComposePath(filePath)).Exists == true)
+        if (new FileInfo(Path + file).Exists == true)
           success = true;
       }
       catch (Exception e)
@@ -106,21 +132,53 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// <summary>
     /// 
     /// </summary>
+    /// <param name="file"></param>
+    /// <returns></returns>
+    public string NextAvailableName(string file)
+    {
+      string availableName = file;
+
+      int index = 0;
+      try
+      {
+        string name = System.IO.Path.GetFileNameWithoutExtension(file);
+        string extension = System.IO.Path.GetExtension(file);
+
+        do
+        {
+          availableName = $"{name}{index:000}{extension}"; 
+          index++;
+        } while (Exists(availableName) == true && index < 1000);
+      }
+      catch (Exception e)
+      {
+        Log.Exception(e.ToString());
+      }
+      
+      if (index == 1000)
+        Log.Error($"Index limit reached for file '{file}'");
+
+      return availableName;      
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
     /// <param name="data"></param>
     /// <param name="slot"></param>
     /// <typeparam name="T"></typeparam>
-    public async void Save<T>(T data, string filePath) where T : LocalFile
+    public async void Save<T>(T data, string file, Action<float> onProgress = null, Action onEnd = null) where T : LocalFile
     {
       Check.IsNotNull(data);
-      Check.IsNotNullOrEmpty(filePath);
+      Check.IsNotNullOrEmpty(file);
       Check.GreaterOrEqual(bufferSize, 4);
 
       try
       {
-        if (CheckPath(filePath) == true)
+        file = Path + file;
+        if (CheckPath(file) == true)
         {
-          filePath = ComposePath(filePath);
-          using (FileStream fileStream = new FileStream(filePath,
+          using (FileStream fileStream = new FileStream(file,
             FileMode.Create,
             FileAccess.Write,
             FileShare.None,
@@ -132,6 +190,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
             await fileStream.WriteAsync(bytes, 0, bytes.Length);
           }
         }
+        
+        onEnd?.Invoke();
       }
       catch (Exception e)
       {
@@ -145,19 +205,19 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// <param name="slot"></param>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    public async Task<T> Load<T>(string filePath) where T : LocalFile
+    public async Task<T> Load<T>(string file) where T : LocalFile
     {
-      Check.IsNotNullOrEmpty(filePath);
+      Check.IsNotNullOrEmpty(file);
       Check.GreaterOrEqual(bufferSize, 4);
 
       T data = null;
 
       try
       {
-        filePath = ComposePath(filePath);
-        if (Exists(filePath) == true)
+        file = Path + file;
+        if (Exists(file) == true)
         {
-          using (FileStream sourceStream = new FileStream(filePath,
+          using (FileStream sourceStream = new FileStream(file,
             FileMode.Open,
             FileAccess.Read,
             FileShare.Read,
@@ -172,7 +232,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
           }
         }
         else
-          Log.Error($"File {filePath} not found");
+          Log.Error($"File {file} not found");
       }
       catch (Exception e)
       {
@@ -182,7 +242,30 @@ namespace FronkonGames.GameWork.Modules.LocalData
       return data;
     }
 
-    private string ComposePath(string filePath)
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="file"></param>
+    public void Delete(string file)
+    {
+      Check.IsNotNullOrEmpty(file);
+
+      if (Exists(file) == true)
+      {
+        try
+        {
+          File.Delete(Path + file);
+        }
+        catch (Exception e)
+        {
+          Log.Exception(e.ToString());
+        }
+      }
+      else
+        Log.Warning($"File '{file}' not found");
+    }
+
+    private static string ComposePath()
     {
       string path = string.Empty;
 #if (UNITY_ANDROID || UNITY_IOS)
@@ -194,15 +277,26 @@ namespace FronkonGames.GameWork.Modules.LocalData
 #else
       throw new NotSupportedException("platform not supported.");
 #endif
-      return path + Path + filePath;
+
+      if (string.IsNullOrEmpty(Application.companyName) == false)
+        path += Application.companyName.RemoveInvalidFileCharacters();
+
+      if (string.IsNullOrEmpty(Application.productName) == false)
+        path += "/" + Application.productName.RemoveInvalidFileCharacters();
+
+      path += "/";
+      path = path.Replace("\\", "/");
+      path = path.Replace("//", "/");
+
+      return path;
     }
 
-    private bool CheckPath(string filePath)
+    private bool CheckPath(string file)
     {
       bool success = false;
       try
       {
-        string path = System.IO.Path.GetDirectoryName(ComposePath(filePath));
+        string path = System.IO.Path.GetDirectoryName(file);
         if (Directory.Exists(path) == false)
         {
           Directory.CreateDirectory(path);
