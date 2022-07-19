@@ -22,10 +22,10 @@ using FronkonGames.GameWork.Foundation;
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
-  /// Small file.
+  /// Test file.
   /// </summary>
   [Serializable]
-  public sealed class FileTest : LocalFile
+  public sealed class TestFile : LocalFile
   {
     public byte valueByte;
     public char valueChar;
@@ -35,23 +35,23 @@ namespace FronkonGames.GameWork.Modules.LocalData
     public float valueFloat;
     public double valueDouble;
 
-    public List<int> listInts;
+    public int[] valueInts;
 
-    public FileTest(int size)
+    public TestFile(int size)
     {
       Check.Greater(size, 0);
 
-      valueByte = (byte)Rand.Range(0, 255);
-      valueChar = (char)Rand.Range(0, 255);
+      valueByte = (byte)Rand.Range(3, 126);
+      valueChar = (char)Rand.Range(3, 126);
       valueString = Convert.ToBase64String(Guid.NewGuid().ToByteArray())[..8];
       valueInt = Rand.Range(0, 255);
       valueLong = Rand.Range(0, 255);
       valueFloat = Rand.Range(0.0f, 255.0f);
       valueDouble = (double)Rand.Range(0.0f, 255.0f);
 
-      listInts = new List<int>(size);
-      for (int i = 0; i < listInts.Count; ++i)
-        listInts[i] = Rand.Range(0, 255);
+      valueInts = new int[size];
+      for (int i = 0; i < valueInts.Length; ++i)
+        valueInts[i] = Rand.Range(0, 255);
     }
   }
 }

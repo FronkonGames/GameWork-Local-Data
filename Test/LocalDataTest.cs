@@ -38,9 +38,11 @@ namespace FronkonGames.GameWork.Modules.LocalData
     private GUIStyle buttonStyle;
 
     private Vector2 scrollView;
+    private string LoadingText;
 
     private List<FileInfo> files = new List<FileInfo>();
     private int fileSelected = -1;
+    private TestFile testFile = null;
 
     /// <summary>
     /// On initialize.
@@ -55,7 +57,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// </summary>
     public override void OnInitialized()
     {
-      files = localData.Files();
+      files = localData.GetFilesInfo();
     }
 
     /// <summary>
@@ -85,7 +87,11 @@ namespace FronkonGames.GameWork.Modules.LocalData
           GUILayout.BeginVertical("box", GUILayout.ExpandWidth(true), GUILayout.Height(Screen.height * 0.3f));
           {
             if (files.Count == 0)
+            {
+              GUILayout.FlexibleSpace();
               GUILayout.Label("<i>No files found.</i>", FontStyle);
+              GUILayout.FlexibleSpace();
+            }
             else
             {
               scrollView = GUILayout.BeginScrollView(scrollView);
@@ -97,7 +103,12 @@ namespace FronkonGames.GameWork.Modules.LocalData
                   GUILayout.BeginHorizontal();
                   {
                     if (GUILayout.Button($"[{i:000}] '{files[i].Name}' | {((int) files[i].Length).BytesToHumanReadable()} | {files[i].CreationTimeUtc.ToShortTimeString()} {files[i].CreationTimeUtc.ToShortDateString()}", FontStyle) == true)
+                    {
                       fileSelected = i;
+                      testFile = null;
+
+                      localData.Load<TestFile>(files[i].Name, (read, total) => LoadingText = $"Loading ({read.BytesToHumanReadable()}/{total.BytesToHumanReadable()})", (file) => testFile = file);
+                    }
                   }
                   GUILayout.EndHorizontal();
                 }
@@ -113,23 +124,37 @@ namespace FronkonGames.GameWork.Modules.LocalData
           {
             GUILayout.FlexibleSpace();
 
+            if (localData.Busy == true && GUILayout.Button("Cancel", ButtonStyle) == true)
+              localData.CancelAsyncOperations();
+
+            GUI.enabled = localData.Busy == false;
+
             if (GUILayout.Button("Refresh", ButtonStyle) == true)
-              files = localData.Files();
+              files = localData.GetFilesInfo();
 
             if (GUILayout.Button("New small file", ButtonStyle) == true)
-              localData.Save(new FileTest(Rand.Range(1, 10)), localData.NextAvailableName("File_.test"), null, () => { files = localData.Files(); });
+            {
+              localData.CancelAsyncOperations();
+              localData.Save(new TestFile(Rand.Range(1, 10)), localData.NextAvailableName("File_.test"), null, () => { files = localData.GetFilesInfo(); });
+            }
 
             if (GUILayout.Button("New large file", ButtonStyle) == true)
-              localData.Save(new FileTest(Rand.Range(10000000, 100000000)), localData.NextAvailableName("File_.test"), null, () => { files = localData.Files(); });
-
-            GUI.enabled = fileSelected != -1;
-
-            if (GUILayout.Button(GUI.enabled == true ? "<color=red>Delete</color>" : "<color=gray>Delete</color>", ButtonStyle) == true && fileSelected < files.Count)
             {
+              localData.CancelAsyncOperations();
+              localData.Save(new TestFile(Rand.Range(10000000, 100000000)), localData.NextAvailableName("File_.test"), null, () => { files = localData.GetFilesInfo(); });
+            }
+
+            GUI.enabled = localData.Busy == false && fileSelected != -1;
+            
+            GUILayout.Space(margin);
+
+            if (GUILayout.Button("DELETE", ButtonStyle) == true && fileSelected < files.Count)
+            {
+              localData.CancelAsyncOperations();
               localData.Delete(files[fileSelected].Name);
               fileSelected = -1;
               
-              files = localData.Files();
+              files = localData.GetFilesInfo();
             }
 
             GUI.enabled = true;
@@ -144,7 +169,23 @@ namespace FronkonGames.GameWork.Modules.LocalData
               
             GUILayout.BeginVertical("box", GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
             {
-              GUILayout.FlexibleSpace();
+              if (testFile == null)
+              {
+                GUILayout.FlexibleSpace();
+                GUILayout.Label($"<i>{LoadingText}</i>", FontStyle);
+                GUILayout.FlexibleSpace();
+              }
+              else
+              {
+                GUILayout.Label($"Value byte: {testFile.valueByte.ToString()}");
+                GUILayout.Label($"Value char: {testFile.valueChar.ToString()}");
+                GUILayout.Label($"Value string: {testFile.valueString}");
+                GUILayout.Label($"Value int: {testFile.valueInt.ToString()}");
+                GUILayout.Label($"Value long: {testFile.valueLong.ToString()}");
+                GUILayout.Label($"Value float: {testFile.valueFloat.ToString()}");
+                GUILayout.Label($"Value double: {testFile.valueDouble.ToString()}");
+                GUILayout.Label($"List count: {testFile.valueInts.Length.ToString()}");
+              }
             }
             GUILayout.EndVertical();
           }

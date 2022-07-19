@@ -20,10 +20,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Threading;
 using UnityEngine;
 using FronkonGames.GameWork.Core;
 using FronkonGames.GameWork.Foundation;
-using UnityEditor.Experimental.GraphView;
 
 namespace FronkonGames.GameWork.Modules.LocalData
 {
@@ -41,6 +41,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
     
     public string Path { get; set; }
     
+    public bool Busy { get; private set; }
+
     [Title("Settings")]
 
     [SerializeField, Label("Compress data"), Indent, OnlyEnableInEdit]
@@ -51,14 +53,19 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
     [Title("Streams")]
 
-    [SerializeField, Label("Buffer size (KB)"), Indent, Range(1, 32), OnlyEnableInEdit]
-    private int bufferSize = 4;
+    [SerializeField, Label("Buffer size (KB)"), Indent, Range(1, 256), OnlyEnableInEdit]
+    private int bufferSize = 32;
+
+    private CancellationTokenSource cancellationSource;
 
     /// <summary>
     /// When initialize.
     /// </summary>
     public void OnInitialize()
     {
+      Busy = false;
+      cancellationSource = null;
+      
       Path = ComposePath();
       
       Log.Info($"Using path '{Path}'");
@@ -85,7 +92,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// <param name="searchPattern"></param>
     /// <param name="recursive"></param>
     /// <returns></returns>
-    public List<FileInfo> Files(string searchPattern = "*.*", bool recursive = false)
+    public List<FileInfo> GetFilesInfo(string searchPattern = "*.*", bool recursive = false)
     {
       List<FileInfo> files = new List<FileInfo>();
 
@@ -104,6 +111,29 @@ namespace FronkonGames.GameWork.Modules.LocalData
       }
 
       return files;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="searchPattern"></param>
+    /// <param name="recursive"></param>
+    /// <returns></returns>
+    public FileInfo GetFileInfo(string file)
+    {
+      Check.IsNotNullOrEmpty(file);
+      FileInfo fileInfo = null;
+
+      try
+      {
+        fileInfo = new FileInfo(Path + file); 
+      }
+      catch (Exception e)
+      {
+        Log.Exception(e.ToString());
+      }
+
+      return fileInfo.Exists == true ? fileInfo : null;
     }
 
     /// <summary>
@@ -158,8 +188,10 @@ namespace FronkonGames.GameWork.Modules.LocalData
       if (index == 1000)
         Log.Error($"Index limit reached for file '{file}'");
 
-      return availableName;      
+      return availableName;
     }
+
+    public void CancelAsyncOperations() => cancellationSource?.Cancel(); 
 
     /// <summary>
     /// 
@@ -175,6 +207,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
       try
       {
+        Busy = true;
+
         file = Path + file;
         if (CheckPath(file) == true)
         {
@@ -186,16 +220,20 @@ namespace FronkonGames.GameWork.Modules.LocalData
             true))
           {
             byte[] bytes = ToBytes(data);
-        
+
             await fileStream.WriteAsync(bytes, 0, bytes.Length);
           }
         }
-        
-        onEnd?.Invoke();
       }
       catch (Exception e)
       {
         Log.Exception(e.ToString());
+      }
+      finally
+      {
+        Busy = false;
+
+        onEnd?.Invoke();
       }
     }
     
@@ -205,7 +243,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// <param name="slot"></param>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    public async Task<T> Load<T>(string file) where T : LocalFile
+    public async Task<T> Load<T>(string file, Action<int, int> onProgress = null, Action<T> onEnd = null) where T : LocalFile
     {
       Check.IsNotNullOrEmpty(file);
       Check.GreaterOrEqual(bufferSize, 4);
@@ -214,29 +252,49 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
       try
       {
-        file = Path + file;
-        if (Exists(file) == true)
+        Busy = true;
+        cancellationSource = new();
+
+        FileInfo fileInfo = GetFileInfo(file);
+        if (fileInfo != null)
         {
-          using (FileStream sourceStream = new FileStream(file,
-            FileMode.Open,
-            FileAccess.Read,
-            FileShare.Read,
-            bufferSize * 1024,
-            true))
+          byte[] buffer = new byte[bufferSize * 1024];
+
+          await using FileStream fileStream = new(Path + file, FileMode.Open, FileAccess.Read, FileShare.Read);
+          await using MemoryStream memoryStream = new(bufferSize * 1024);
+
+          int bytesRead;
+          long totalRead = 0;
+          while ((bytesRead = await fileStream.ReadAsync(buffer, 0, buffer.Length, cancellationSource.Token)) > 0)
           {
-            byte[] buffer = new byte[bufferSize * 1024];
+            await memoryStream.WriteAsync(buffer, 0, bytesRead, cancellationSource.Token);
+            totalRead += bytesRead;
 
-            await sourceStream.ReadAsync(buffer, 0, buffer.Length);
-
-            data = FromBytes<T>(buffer);
+            onProgress?.Invoke((int) totalRead, (int) fileInfo.Length);
           }
+
+          memoryStream.Seek(0, SeekOrigin.Begin);
+
+          BinaryFormatter binaryFormatter = new BinaryFormatter();
+          data = binaryFormatter.Deserialize(memoryStream) as T;
         }
         else
-          Log.Error($"File {file} not found");
+          Log.Error($"File {Path}{file} not found");
+      }
+      catch (OperationCanceledException e)
+      {
+        Log.Warning($"File '{file}' loading canceled.");
       }
       catch (Exception e)
       {
         Log.Exception(e.ToString());
+      }
+      finally
+      {
+        Busy = false;
+        cancellationSource = null;
+
+        onEnd?.Invoke(data);
       }
 
       return data;
@@ -323,14 +381,5 @@ namespace FronkonGames.GameWork.Modules.LocalData
         return memoryStream.ToArray();
       }
     }
-
-    private T FromBytes<T>(byte[] data) where T : LocalFile
-    {
-      using (MemoryStream memoryStream = new MemoryStream(data))
-      {
-        BinaryFormatter binaryFormatter = new BinaryFormatter();
-        return (T)binaryFormatter.Deserialize(memoryStream);
-      }
-    }    
   }
 }
