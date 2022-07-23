@@ -18,12 +18,16 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Text;
 using System.Threading;
 using UnityEngine;
 using FronkonGames.GameWork.Core;
 using FronkonGames.GameWork.Foundation;
+using CompressionLevel = System.IO.Compression.CompressionLevel;
 
 namespace FronkonGames.GameWork.Modules.LocalData
 {
@@ -40,32 +44,52 @@ namespace FronkonGames.GameWork.Modules.LocalData
     public bool Initialized { get; set; }
     
     public string Path { get; set; }
-    
-    public bool Busy { get; private set; }
 
-    [Title("Settings")]
-
-    [SerializeField, Label("Compress data"), Indent, OnlyEnableInEdit]
-    private bool compress;
-
-    [SerializeField, Label("Encrypt data"), Indent, OnlyEnableInEdit]
-    private bool encrypted;
+    public bool Busy => cancellationSource != null;
 
     [Title("Streams")]
 
     [SerializeField, Label("Buffer size (KB)"), Indent, Range(1, 256), OnlyEnableInEdit]
     private int bufferSize = 32;
 
+    [Title("Compression")]
+
+    [SerializeField, Label("Type"), Indent, OnlyEnableInEdit]
+    private FileCompression fileCompression = FileCompression.None;
+
+    [SerializeField, Label("Level"), Indent, OnlyEnableInEdit]
+    private CompressionLevel compressionLevel = CompressionLevel.Fastest;
+
+    [Title("Encryption")]
+
+    [SerializeField, Label("Algorithm"), Indent, OnlyEnableInEdit]
+    private FileEncryption fileEncryption = FileEncryption.None;
+
+    [SerializeField, Indent, Password, OnlyEnableInEdit]
+    private string password;
+
+    [SerializeField, Indent, Password, OnlyEnableInEdit]
+    private string seed;
+
     private CancellationTokenSource cancellationSource;
+
+    private byte[] Key;
+    private byte[] IV;
 
     /// <summary>
     /// When initialize.
     /// </summary>
     public void OnInitialize()
     {
-      Busy = false;
       cancellationSource = null;
-      
+
+      if (string.IsNullOrEmpty(password) == false && string.IsNullOrEmpty(seed) == false)
+      {
+        Rfc2898DeriveBytes rfc = new(password, Encoding.ASCII.GetBytes(seed));
+        Key = rfc.GetBytes(16);
+        IV = rfc.GetBytes(16);
+      }
+
       Path = ComposePath();
       
       Log.Info($"Using path '{Path}'");
@@ -196,33 +220,82 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// <summary>
     /// 
     /// </summary>
-    /// <param name="data"></param>
-    /// <param name="slot"></param>
+    /// <param name="localData"></param>
+    /// <param name="file"></param>
+    /// <param name="onProgress"></param>
+    /// <param name="onEnd"></param>
     /// <typeparam name="T"></typeparam>
-    public async void Save<T>(T data, string file, Action<float> onProgress = null, Action onEnd = null) where T : LocalFile
+    public async void Save<T>(T localData, string file,
+                              Action<int, int> onProgress = null,
+                              Action<T> onEnd = null) where T : ILocalData
     {
-      Check.IsNotNull(data);
+      Check.IsNotNull(localData);
       Check.IsNotNullOrEmpty(file);
       Check.GreaterOrEqual(bufferSize, 4);
 
       try
       {
-        Busy = true;
+        cancellationSource = new();
 
         file = Path + file;
         if (CheckPath(file) == true)
         {
-          using (FileStream fileStream = new FileStream(file,
-            FileMode.Create,
-            FileAccess.Write,
-            FileShare.None,
-            bufferSize * 1024,
-            true))
-          {
-            byte[] bytes = ToBytes(data);
+          await using FileStream fileStream = new(file, FileMode.Create, FileAccess.Write, FileShare.None);
 
-            await fileStream.WriteAsync(bytes, 0, bytes.Length);
+          // Signature   : string.
+          // Compression : int.
+          // Encryption  : int.
+          // MD5         : byte[].
+          // Version     : int.
+          // Data        : byte[].
+          
+          await fileStream.WriteAsync(Encoding.UTF8.GetBytes(localData.Signature));
+          await fileStream.WriteAsync(BitConverter.GetBytes((int)fileCompression));
+          await fileStream.WriteAsync(BitConverter.GetBytes((int)fileEncryption));
+
+          BinaryFormatter binaryFormatter = new();
+          await using MemoryStream memoryStream = new();
+          binaryFormatter.Serialize(memoryStream, localData);
+
+          byte[] bytes = memoryStream.ToArray();
+          memoryStream.Close();
+
+          using MD5 md5 = MD5.Create();
+          md5.TransformFinalBlock(bytes, 0, bytes.Length);
+          await fileStream.WriteAsync(md5.Hash);
+
+          switch (fileCompression)
+          {
+            case FileCompression.None: break;
+            case FileCompression.Zip:
+            {
+              await using GZipStream compressor = new(memoryStream, compressionLevel);
+              await compressor.WriteAsync(bytes, 0, bytes.Length);
+              bytes = memoryStream.ToArray();
+            }
+            break;
           }
+          
+          memoryStream.Close();
+
+          switch (fileEncryption)
+          {
+            case FileEncryption.None: break;
+            case FileEncryption.AES:
+            {
+              await using MemoryStream encryptedStream = new();
+              using AesCryptoServiceProvider aesProvider = new();
+              await using CryptoStream cryptoStream = new(encryptedStream, aesProvider.CreateEncryptor(Key, IV), CryptoStreamMode.Write);
+
+              await cryptoStream.WriteAsync(bytes, 0, bytes.Length);
+              bytes = encryptedStream.ToArray();
+            }
+            break;
+          }
+
+          await fileStream.WriteAsync(BitConverter.GetBytes(localData.Version));
+          
+          await fileStream.WriteAsync(bytes);
         }
       }
       catch (Exception e)
@@ -231,9 +304,9 @@ namespace FronkonGames.GameWork.Modules.LocalData
       }
       finally
       {
-        Busy = false;
+        cancellationSource = null;
 
-        onEnd?.Invoke();
+        onEnd?.Invoke(localData);
       }
     }
     
@@ -243,7 +316,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// <param name="slot"></param>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    public async Task<T> Load<T>(string file, Action<int, int> onProgress = null, Action<T> onEnd = null) where T : LocalFile
+    public async Task<T> Load<T>(string file, Action<int, int> onProgress = null, Action<T> onEnd = null) where T : LocalData
     {
       Check.IsNotNullOrEmpty(file);
       Check.GreaterOrEqual(bufferSize, 4);
@@ -252,7 +325,6 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
       try
       {
-        Busy = true;
         cancellationSource = new();
 
         FileInfo fileInfo = GetFileInfo(file);
@@ -291,7 +363,6 @@ namespace FronkonGames.GameWork.Modules.LocalData
       }
       finally
       {
-        Busy = false;
         cancellationSource = null;
 
         onEnd?.Invoke(data);
@@ -370,16 +441,6 @@ namespace FronkonGames.GameWork.Modules.LocalData
       }
 
       return success;
-    }
-    
-    private byte[] ToBytes<T>(T data) where T : LocalFile 
-    {
-      BinaryFormatter binaryFormatter = new BinaryFormatter();
-      using (MemoryStream memoryStream = new MemoryStream())
-      {
-        binaryFormatter.Serialize(memoryStream, data);
-        return memoryStream.ToArray();
-      }
     }
   }
 }

@@ -261,9 +261,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 70fac41f51b844543be1dc3745ced385, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  compress: 0
-  encrypted: 0
   bufferSize: 32
+  fileCompression: 0
+  compressionLevel: 1
+  fileEncryption: 0
+  password: Password
+  seed: 1bb6bd0e-37ae-4701-b8aa-f5bf2415
 --- !u!1 &1440672285
 GameObject:
   m_ObjectHideFlags: 0

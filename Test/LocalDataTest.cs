@@ -16,6 +16,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEngine;
 using FronkonGames.GameWork.Foundation;
 using FronkonGames.GameWork.Core;
@@ -42,7 +43,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
     private List<FileInfo> files = new List<FileInfo>();
     private int fileSelected = -1;
-    private TestFile testFile = null;
+    private TestData testData = null;
 
     /// <summary>
     /// On initialize.
@@ -105,9 +106,9 @@ namespace FronkonGames.GameWork.Modules.LocalData
                     if (GUILayout.Button($"[{i:000}] '{files[i].Name}' | {((int) files[i].Length).BytesToHumanReadable()} | {files[i].CreationTimeUtc.ToShortTimeString()} {files[i].CreationTimeUtc.ToShortDateString()}", FontStyle) == true)
                     {
                       fileSelected = i;
-                      testFile = null;
+                      testData = null;
 
-                      localData.Load<TestFile>(files[i].Name, (read, total) => LoadingText = $"Loading ({read.BytesToHumanReadable()}/{total.BytesToHumanReadable()})", (file) => testFile = file);
+                      localData.Load<TestData>(files[i].Name, (read, total) => LoadingText = $"Loading ({read.BytesToHumanReadable()}/{total.BytesToHumanReadable()})", (file) => testData = file);
                     }
                   }
                   GUILayout.EndHorizontal();
@@ -135,13 +136,19 @@ namespace FronkonGames.GameWork.Modules.LocalData
             if (GUILayout.Button("New small file", ButtonStyle) == true)
             {
               localData.CancelAsyncOperations();
-              localData.Save(new TestFile(Rand.Range(1, 10)), localData.NextAvailableName("File_.test"), null, () => { files = localData.GetFilesInfo(); });
+              localData.Save(new TestData(Rand.Range(1, 10)),
+                             localData.NextAvailableName("File_.test"),
+                             null,
+                             (file) => { files = localData.GetFilesInfo(); });
             }
 
             if (GUILayout.Button("New large file", ButtonStyle) == true)
             {
               localData.CancelAsyncOperations();
-              localData.Save(new TestFile(Rand.Range(10000000, 100000000)), localData.NextAvailableName("File_.test"), null, () => { files = localData.GetFilesInfo(); });
+              localData.Save(new TestData(Rand.Range(10000000, 100000000)),
+                             localData.NextAvailableName("File_.test"),
+                             null,
+                             (file) => { files = localData.GetFilesInfo(); });
             }
 
             GUI.enabled = localData.Busy == false && fileSelected != -1;
@@ -169,7 +176,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
               
             GUILayout.BeginVertical("box", GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
             {
-              if (testFile == null)
+              if (testData == null)
               {
                 GUILayout.FlexibleSpace();
                 GUILayout.Label($"<i>{LoadingText}</i>", FontStyle);
@@ -177,14 +184,9 @@ namespace FronkonGames.GameWork.Modules.LocalData
               }
               else
               {
-                GUILayout.Label($"Value byte: {testFile.valueByte.ToString()}");
-                GUILayout.Label($"Value char: {testFile.valueChar.ToString()}");
-                GUILayout.Label($"Value string: {testFile.valueString}");
-                GUILayout.Label($"Value int: {testFile.valueInt.ToString()}");
-                GUILayout.Label($"Value long: {testFile.valueLong.ToString()}");
-                GUILayout.Label($"Value float: {testFile.valueFloat.ToString()}");
-                GUILayout.Label($"Value double: {testFile.valueDouble.ToString()}");
-                GUILayout.Label($"List count: {testFile.valueInts.Length.ToString()}");
+                GUILayout.Label($"Message: {testData.message}");
+                GUILayout.Label($"Ints count: {testData.ints.Length.ToString()}");
+                GUILayout.Label($"Ints: {string.Join(",", testData.ints[..9])}");
               }
             }
             GUILayout.EndVertical();
