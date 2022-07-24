@@ -27,6 +27,6 @@ namespace FronkonGames.GameWork.Modules.LocalData
   {
     public virtual async Task<byte[]> Compress(MemoryStream stream) => stream.ToArray();
 
-    public virtual async Task<byte[]> Decompress(MemoryStream stream) => stream.ToArray();
+    public virtual async Task<byte[]> Decompress(MemoryStream memoryStream, byte[] buffer, int originalSize) => memoryStream.ToArray();
   }  
 }

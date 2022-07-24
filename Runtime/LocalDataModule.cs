@@ -231,17 +231,20 @@ namespace FronkonGames.GameWork.Modules.LocalData
         if (CheckPath(fileName) == true)
         {
           await using FileStream fileStream = new(fileName, FileMode.Create, FileAccess.Write, FileShare.None);
+          await using BinaryWriter writer = new(fileStream);
 
-          // Signature   : string.
-          // Compression : int.
-          // Encryption  : int.
-          // MD5         : string.
-          // Version     : int.
-          // Data        : byte[].
+          // Signature    : string.
+          // Compression  : int.
+          // Encryption   : int.
+          // MD5          : string.
+          // Version      : int.
+          // Data size(*) : int.
+          // Data         : byte[].
+          // (*) uncompressed
           
-          await fileStream.WriteAsync(Encoding.UTF8.GetBytes(localData.Signature));
-          await fileStream.WriteAsync(BitConverter.GetBytes((int)fileCompression));
-          await fileStream.WriteAsync(BitConverter.GetBytes((int)fileEncryption));
+          writer.Write(localData.Signature);
+          writer.Write((int)fileCompression);
+          writer.Write((int)fileEncryption);
 
           BinaryFormatter binaryFormatter = new();
           await using MemoryStream memoryStream = new();
@@ -250,12 +253,16 @@ namespace FronkonGames.GameWork.Modules.LocalData
             binaryFormatter.Serialize(memoryStream, localData);
           }
 
+          int uncompressedSize = (int)memoryStream.Length;
+
+          string hash = string.Empty;
           using (Profiling.Time($"Calculating {file} integrity"))
           {
             MD5Integrity integrity = new(bufferSize * 1024);
-            string hash = await integrity.Calculate(memoryStream);
-            await fileStream.WriteAsync(Encoding.UTF8.GetBytes(hash));
+            hash = await integrity.Calculate(memoryStream);
           }
+
+          writer.Write(hash);
 
           byte[] bytes;
           using (Profiling.Time($"Compressing {file} using {fileCompression.ToString()}"))
@@ -263,9 +270,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
             CompressorBase compressor = fileCompression switch
             {
               FileCompression.None   => new NullCompressor(),
-              FileCompression.Zip    => new NullCompressor(),
               FileCompression.GZip   => new GZipCompressor(compressionLevel),
-              FileCompression.Brotli => new NullCompressor(),
               _ => null
             };
 
@@ -287,9 +292,11 @@ namespace FronkonGames.GameWork.Modules.LocalData
             bytes = await encryptor.Encrypt(bytes);
           }
 
-          await fileStream.WriteAsync(BitConverter.GetBytes(localData.Version));
+          writer.Write(localData.Version);
 
-          using (Profiling.Time($"Writing {fileName}"))
+          writer.Write(uncompressedSize);
+
+          using (Profiling.Time($"Writing {fileName} data"))
           {
             await fileStream.WriteAsync(bytes);
           }
@@ -322,7 +329,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
       try
       {
-        cancellationSource = new();
+        cancellationSource = new CancellationTokenSource();
 
         FileInfo fileInfo = GetFileInfo(file);
         if (fileInfo != null)
@@ -330,22 +337,38 @@ namespace FronkonGames.GameWork.Modules.LocalData
           byte[] buffer = new byte[bufferSize * 1024];
 
           await using FileStream fileStream = new(Path + file, FileMode.Open, FileAccess.Read, FileShare.Read);
-          await using MemoryStream memoryStream = new(bufferSize * 1024);
+          using BinaryReader binaryReader = new(fileStream);
 
-          int bytesRead;
-          long totalRead = 0;
-          while ((bytesRead = await fileStream.ReadAsync(buffer, 0, buffer.Length, cancellationSource.Token)) > 0)
+          string signature = binaryReader.ReadString();
+          FileCompression compression = (FileCompression)binaryReader.ReadInt32();
+          FileEncryption encryption = (FileEncryption)binaryReader.ReadInt32();
+          string md5 = binaryReader.ReadString();
+          int version = binaryReader.ReadInt32();
+          int size = binaryReader.ReadInt32();
+          
+          await using MemoryStream outStream = new();
+          int bytesRead = 0;
+          do
           {
-            await memoryStream.WriteAsync(buffer, 0, bytesRead, cancellationSource.Token);
-            totalRead += bytesRead;
+            bytesRead = await fileStream.ReadAsync(buffer, 0, buffer.Length);
+            if (bytesRead > 0)
+              await outStream.WriteAsync(buffer, 0, bytesRead);
+          } while (bytesRead > 0);
+          
+          // TODO: Check signature.
+          
+          // TODO: Check integrity.
+          
+          // TODO: Decrypt.
+          
+          // TODO: Decompress.
 
-            onProgress?.Invoke((int) totalRead, (int) fileInfo.Length);
+          if (outStream.Length > 0)
+          {
+            BinaryFormatter binaryFormatter = new();
+            outStream.Seek(0, SeekOrigin.Begin);
+            data = binaryFormatter.Deserialize(outStream) as T;
           }
-
-          memoryStream.Seek(0, SeekOrigin.Begin);
-
-          BinaryFormatter binaryFormatter = new BinaryFormatter();
-          data = binaryFormatter.Deserialize(memoryStream) as T;
         }
         else
           Log.Error($"File {Path}{file} not found");

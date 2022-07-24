@@ -23,8 +23,6 @@ namespace FronkonGames.GameWork.Modules.LocalData
   public enum FileCompression
   {
     None,
-    Zip,
     GZip,
-    Brotli,
   }
 }

@@ -40,6 +40,20 @@ namespace FronkonGames.GameWork.Modules.LocalData
       return outStream.ToArray();
     }
 
-    public override async Task<byte[]> Decompress(MemoryStream stream) => stream.ToArray();
+    public override async Task<byte[]> Decompress(MemoryStream memoryStream, byte[] buffer, int originalSize)
+    {
+      await using GZipStream gZipCompressor = new(memoryStream, CompressionMode.Decompress);
+
+      await using MemoryStream outStream = new();
+      int bytesRead = 0;
+      do
+      {
+        bytesRead = await gZipCompressor.ReadAsync(buffer, 0, buffer.Length);
+        if (bytesRead > 0)
+          await outStream.WriteAsync(buffer, 0, bytesRead);
+      } while (bytesRead > 0);
+
+      return memoryStream.ToArray();
+    }
   }
 }
