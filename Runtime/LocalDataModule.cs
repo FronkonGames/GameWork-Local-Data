@@ -73,22 +73,12 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
     private CancellationTokenSource cancellationSource;
 
-    private byte[] Key;
-    private byte[] IV;
-
     /// <summary>
     /// When initialize.
     /// </summary>
     public void OnInitialize()
     {
       cancellationSource = null;
-
-      if (string.IsNullOrEmpty(password) == false && string.IsNullOrEmpty(seed) == false)
-      {
-        Rfc2898DeriveBytes rfc = new(password, Encoding.ASCII.GetBytes(seed));
-        Key = rfc.GetBytes(16);
-        IV = rfc.GetBytes(16);
-      }
 
       Path = ComposePath();
       
@@ -237,10 +227,10 @@ namespace FronkonGames.GameWork.Modules.LocalData
       {
         cancellationSource = new();
 
-        file = Path + file;
-        if (CheckPath(file) == true)
+        string fileName = Path + file;
+        if (CheckPath(fileName) == true)
         {
-          await using FileStream fileStream = new(file, FileMode.Create, FileAccess.Write, FileShare.None);
+          await using FileStream fileStream = new(fileName, FileMode.Create, FileAccess.Write, FileShare.None);
 
           // Signature   : string.
           // Compression : int.
@@ -260,8 +250,6 @@ namespace FronkonGames.GameWork.Modules.LocalData
             binaryFormatter.Serialize(memoryStream, localData);
           }
 
-          byte[] bytes = memoryStream.ToArray();
-
           using (Profiling.Time($"Calculating {file} integrity"))
           {
             MD5Integrity integrity = new(bufferSize * 1024);
@@ -269,44 +257,39 @@ namespace FronkonGames.GameWork.Modules.LocalData
             await fileStream.WriteAsync(Encoding.UTF8.GetBytes(hash));
           }
 
-          using (Profiling.Time($"Compressing {file}"))
+          byte[] bytes;
+          using (Profiling.Time($"Compressing {file} using {fileCompression.ToString()}"))
           {
-            switch (fileCompression)
+            CompressorBase compressor = fileCompression switch
             {
-              case FileCompression.None: break;
-              case FileCompression.GZip:
-              {
-                await using GZipStream compressor = new(memoryStream, compressionLevel);
-                await compressor.WriteAsync(bytes, 0, bytes.Length);
-                bytes = memoryStream.ToArray();
-              }
-                break;
-            }
+              FileCompression.None   => new NullCompressor(),
+              FileCompression.Zip    => new NullCompressor(),
+              FileCompression.GZip   => new GZipCompressor(compressionLevel),
+              FileCompression.Brotli => new NullCompressor(),
+              _ => null
+            };
+
+            Check.IsNotNull(compressor);
+            bytes = await compressor.Compress(memoryStream);
+            memoryStream.Close();
           }
-          
-          memoryStream.Close();
 
-          using (Profiling.Time($"Encrypting {file}"))
+          using (Profiling.Time($"Encrypting {file} using {fileEncryption.ToString()}"))
           {
-            switch (fileEncryption)
+            EncryptorBase encryptor = fileEncryption switch
             {
-              case FileEncryption.None: break;
-              case FileEncryption.AES:
-              {
-                await using MemoryStream encryptedStream = new();
-                using AesCryptoServiceProvider aesProvider = new();
-                await using CryptoStream cryptoStream = new(encryptedStream, aesProvider.CreateEncryptor(Key, IV), CryptoStreamMode.Write);
+              FileEncryption.None => new NullEncryptor(),
+              FileEncryption.AES  => new AESEncryptor(password, seed),
+              _ => null
+            };
 
-                await cryptoStream.WriteAsync(bytes, 0, bytes.Length);
-                bytes = encryptedStream.ToArray();
-              }
-                break;
-            }
+            Check.IsNotNull(encryptor);
+            bytes = await encryptor.Encrypt(bytes);
           }
 
           await fileStream.WriteAsync(BitConverter.GetBytes(localData.Version));
 
-          using (Profiling.Time($"Writing {file}"))
+          using (Profiling.Time($"Writing {fileName}"))
           {
             await fileStream.WriteAsync(bytes);
           }
