@@ -245,7 +245,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
           // Signature   : string.
           // Compression : int.
           // Encryption  : int.
-          // MD5         : byte[].
+          // MD5         : string.
           // Version     : int.
           // Data        : byte[].
           
@@ -255,47 +255,61 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
           BinaryFormatter binaryFormatter = new();
           await using MemoryStream memoryStream = new();
-          binaryFormatter.Serialize(memoryStream, localData);
+          using (Profiling.Time($"Serializing {file}"))
+          {
+            binaryFormatter.Serialize(memoryStream, localData);
+          }
 
           byte[] bytes = memoryStream.ToArray();
-          memoryStream.Close();
 
-          using MD5 md5 = MD5.Create();
-          md5.TransformFinalBlock(bytes, 0, bytes.Length);
-          await fileStream.WriteAsync(md5.Hash);
-
-          switch (fileCompression)
+          using (Profiling.Time($"Calculating {file} integrity"))
           {
-            case FileCompression.None: break;
-            case FileCompression.Zip:
+            MD5Integrity integrity = new(bufferSize * 1024);
+            string hash = await integrity.Calculate(memoryStream);
+            await fileStream.WriteAsync(Encoding.UTF8.GetBytes(hash));
+          }
+
+          using (Profiling.Time($"Compressing {file}"))
+          {
+            switch (fileCompression)
             {
-              await using GZipStream compressor = new(memoryStream, compressionLevel);
-              await compressor.WriteAsync(bytes, 0, bytes.Length);
-              bytes = memoryStream.ToArray();
+              case FileCompression.None: break;
+              case FileCompression.GZip:
+              {
+                await using GZipStream compressor = new(memoryStream, compressionLevel);
+                await compressor.WriteAsync(bytes, 0, bytes.Length);
+                bytes = memoryStream.ToArray();
+              }
+                break;
             }
-            break;
           }
           
           memoryStream.Close();
 
-          switch (fileEncryption)
+          using (Profiling.Time($"Encrypting {file}"))
           {
-            case FileEncryption.None: break;
-            case FileEncryption.AES:
+            switch (fileEncryption)
             {
-              await using MemoryStream encryptedStream = new();
-              using AesCryptoServiceProvider aesProvider = new();
-              await using CryptoStream cryptoStream = new(encryptedStream, aesProvider.CreateEncryptor(Key, IV), CryptoStreamMode.Write);
+              case FileEncryption.None: break;
+              case FileEncryption.AES:
+              {
+                await using MemoryStream encryptedStream = new();
+                using AesCryptoServiceProvider aesProvider = new();
+                await using CryptoStream cryptoStream = new(encryptedStream, aesProvider.CreateEncryptor(Key, IV), CryptoStreamMode.Write);
 
-              await cryptoStream.WriteAsync(bytes, 0, bytes.Length);
-              bytes = encryptedStream.ToArray();
+                await cryptoStream.WriteAsync(bytes, 0, bytes.Length);
+                bytes = encryptedStream.ToArray();
+              }
+                break;
             }
-            break;
           }
 
           await fileStream.WriteAsync(BitConverter.GetBytes(localData.Version));
-          
-          await fileStream.WriteAsync(bytes);
+
+          using (Profiling.Time($"Writing {file}"))
+          {
+            await fileStream.WriteAsync(bytes);
+          }
         }
       }
       catch (Exception e)
