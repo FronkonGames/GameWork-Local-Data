@@ -18,11 +18,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Runtime.Serialization.Formatters.Binary;
-using System.Text;
 using System.Threading;
 using UnityEngine;
 using FronkonGames.GameWork.Core;
@@ -51,6 +48,11 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
     [SerializeField, Label("Buffer size (KB)"), Indent, Range(1, 256), OnlyEnableInEdit]
     private int bufferSize = 32;
+
+    [Title("Integrity")]
+
+    [SerializeField, Label("Algorithm"), Indent, OnlyEnableInEdit]
+    private FileIntegrity fileIntegrity = FileIntegrity.None;
 
     [Title("Compression")]
 
@@ -233,18 +235,19 @@ namespace FronkonGames.GameWork.Modules.LocalData
           await using FileStream fileStream = new(fileName, FileMode.Create, FileAccess.Write, FileShare.None);
           await using BinaryWriter writer = new(fileStream);
 
-          // Signature    : string.
-          // Compression  : int.
-          // Encryption   : int.
-          // MD5          : string.
-          // Version      : int.
-          // Data size(*) : int.
-          // Data         : byte[].
-          // (*) uncompressed
+          // Signature         : string.
+          // Integrity         : byte.
+          // Compression       : byte.
+          // Encryption        : byte.
+          // Hash              : string.
+          // Uncompressed size : int.
+          // Version           : int.
+          // Data              : byte[].
           
           writer.Write(localData.Signature);
-          writer.Write((int)fileCompression);
-          writer.Write((int)fileEncryption);
+          writer.Write((byte)fileIntegrity);
+          writer.Write((byte)fileCompression);
+          writer.Write((byte)fileEncryption);
 
           BinaryFormatter binaryFormatter = new();
           await using MemoryStream memoryStream = new();
@@ -258,16 +261,21 @@ namespace FronkonGames.GameWork.Modules.LocalData
           string hash = string.Empty;
           using (Profiling.Time($"Calculating {file} integrity"))
           {
-            MD5Integrity integrity = new(bufferSize * 1024);
-            hash = await integrity.Calculate(memoryStream);
-          }
+            IIntegrity integrity = fileIntegrity switch
+            {
+              FileIntegrity.None => new NullIntegrity(),
+              FileIntegrity.MD5  => new MD5Integrity(bufferSize * 1024),
+              _ => null
+            };
 
-          writer.Write(hash);
+            hash = await integrity.Calculate(memoryStream);
+            writer.Write(hash);
+          }
 
           byte[] bytes;
           using (Profiling.Time($"Compressing {file} using {fileCompression.ToString()}"))
           {
-            CompressorBase compressor = fileCompression switch
+            ICompressor compressor = fileCompression switch
             {
               FileCompression.None   => new NullCompressor(),
               FileCompression.GZip   => new GZipCompressor(compressionLevel),
@@ -281,7 +289,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
           using (Profiling.Time($"Encrypting {file} using {fileEncryption.ToString()}"))
           {
-            EncryptorBase encryptor = fileEncryption switch
+            IEncryptor encryptor = fileEncryption switch
             {
               FileEncryption.None => new NullEncryptor(),
               FileEncryption.AES  => new AESEncryptor(password, seed),
@@ -292,9 +300,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
             bytes = await encryptor.Encrypt(bytes);
           }
 
-          writer.Write(localData.Version);
-
           writer.Write(uncompressedSize);
+          writer.Write(localData.Version);
 
           using (Profiling.Time($"Writing {fileName} data"))
           {
@@ -339,35 +346,51 @@ namespace FronkonGames.GameWork.Modules.LocalData
           await using FileStream fileStream = new(Path + file, FileMode.Open, FileAccess.Read, FileShare.Read);
           using BinaryReader binaryReader = new(fileStream);
 
-          string signature = binaryReader.ReadString();
-          FileCompression compression = (FileCompression)binaryReader.ReadInt32();
-          FileEncryption encryption = (FileEncryption)binaryReader.ReadInt32();
-          string md5 = binaryReader.ReadString();
-          int version = binaryReader.ReadInt32();
+          string fileSignature = binaryReader.ReadString();
+          FileIntegrity fileIntegrity = (FileIntegrity)binaryReader.ReadByte();
+          FileCompression fileCompression = (FileCompression)binaryReader.ReadByte();
+          FileEncryption fileEncryption = (FileEncryption)binaryReader.ReadByte();
+          string hash = binaryReader.ReadString();
           int size = binaryReader.ReadInt32();
+          int version = binaryReader.ReadInt32();
           
-          await using MemoryStream outStream = new();
-          int bytesRead = 0;
-          do
+          await using MemoryStream stream = new();
+          using (Profiling.Time($"Reading {file} data"))
           {
-            bytesRead = await fileStream.ReadAsync(buffer, 0, buffer.Length);
-            if (bytesRead > 0)
-              await outStream.WriteAsync(buffer, 0, bytesRead);
-          } while (bytesRead > 0);
+            int bytesRead = 0;
+            do
+            {
+              bytesRead = await fileStream.ReadAsync(buffer, 0, buffer.Length);
+              if (bytesRead > 0)
+                await stream.WriteAsync(buffer, 0, bytesRead);
+            } while (bytesRead > 0);
+          }
           
-          // TODO: Check signature.
-          
-          // TODO: Check integrity.
-          
+          using (Profiling.Time($"Checking {file} integrity"))
+          {
+            IIntegrity integrity = fileIntegrity switch
+            {
+              FileIntegrity.None => new NullIntegrity(),
+              FileIntegrity.MD5  => new MD5Integrity(bufferSize * 1024),
+              _ => null
+            };
+
+            bool integrityOk = await integrity.Check(stream, hash);
+            
+            Log.Info($"File {file} integrity {integrityOk}");
+          }
+
           // TODO: Decrypt.
           
           // TODO: Decompress.
 
-          if (outStream.Length > 0)
+          if (stream.Length > 0)
           {
             BinaryFormatter binaryFormatter = new();
-            outStream.Seek(0, SeekOrigin.Begin);
-            data = binaryFormatter.Deserialize(outStream) as T;
+            stream.Seek(0, SeekOrigin.Begin);
+            data = binaryFormatter.Deserialize(stream) as T;
+
+            // TODO: Check signature.
           }
         }
         else

@@ -14,19 +14,17 @@
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-using System.IO;
 using System.Threading.Tasks;
-using FronkonGames.GameWork.Core;
 
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
   /// .
   /// </summary>
-  public abstract class CompressorBase
+  public interface IEncryptor
   {
-    public virtual async Task<byte[]> Compress(MemoryStream stream) => stream.ToArray();
+    public Task<byte[]> Encrypt(byte[] bytes);
 
-    public virtual async Task<byte[]> Decompress(MemoryStream memoryStream, byte[] buffer, int originalSize) => memoryStream.ToArray();
-  }  
+    public Task<byte[]> Decrypt(byte[] bytes);
+  }
 }

@@ -15,42 +15,17 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 using System.IO;
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading.Tasks;
-using FronkonGames.GameWork.Foundation;
 
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
   /// .
   /// </summary>
-  public sealed class AESEncryptor : IEncryptor
+  public sealed class NullIntegrity : IIntegrity
   {
-    private readonly byte[] Key;
-    private readonly byte[] IV;
+    public async Task<string> Calculate(MemoryStream stream) => string.Empty;
 
-    public AESEncryptor(string password, string seed)
-    {
-      Check.IsNotNullOrEmpty(password);
-      Check.IsNotNullOrEmpty(seed);
-
-      Rfc2898DeriveBytes rfc = new(password, Encoding.ASCII.GetBytes(seed));
-      Key = rfc.GetBytes(16);
-      IV = rfc.GetBytes(16);
-    }
-    
-    public async Task<byte[]> Encrypt(byte[] bytes)
-    {
-      await using MemoryStream encryptedStream = new();
-      using AesCryptoServiceProvider aesProvider = new();
-      await using CryptoStream cryptoStream = new(encryptedStream, aesProvider.CreateEncryptor(Key, IV), CryptoStreamMode.Write);
-
-      await cryptoStream.WriteAsync(bytes, 0, bytes.Length);
-      
-      return encryptedStream.ToArray();
-    }
-
-    public async Task<byte[]> Decrypt(byte[] bytes) => bytes;
+    public async Task<bool> Check(MemoryStream stream, string hash) => true;
   }
 }

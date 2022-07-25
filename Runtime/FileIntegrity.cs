@@ -14,17 +14,15 @@
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-using System.Threading.Tasks;
 
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
   /// .
   /// </summary>
-  public abstract class EncryptorBase
+  public enum FileIntegrity
   {
-    public virtual async Task<byte[]> Encrypt(byte[] bytes) => bytes;
-
-    public virtual async Task<byte[]> Decrypt(byte[] bytes) => bytes;
+    None,
+    MD5,
   }
 }

@@ -24,7 +24,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
   /// <summary>
   /// .
   /// </summary>
-  public sealed class MD5Integrity
+  public sealed class MD5Integrity : IIntegrity
   {
     private readonly byte[] buffer;
 

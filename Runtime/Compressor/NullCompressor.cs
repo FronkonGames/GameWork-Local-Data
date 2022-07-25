@@ -14,13 +14,18 @@
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+using System.IO;
+using System.Threading.Tasks;
 
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
   /// .
   /// </summary>
-  public sealed class NullCompressor : CompressorBase
+  public sealed class NullCompressor : ICompressor
   {
+    public async Task<byte[]> Compress(MemoryStream stream) => stream.ToArray();
+
+    public async Task<byte[]> Decompress(MemoryStream stream, byte[] buffer, int originalSize) => stream.ToArray();
   }
 }

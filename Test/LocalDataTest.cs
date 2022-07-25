@@ -123,6 +123,9 @@ namespace FronkonGames.GameWork.Modules.LocalData
           
           GUILayout.BeginHorizontal();
           {
+            if (GUILayout.Button("Open folder", ButtonStyle) == true)
+              System.Diagnostics.Process.Start("explorer.exe", $"/select,{localData.Path.Replace("/", "\\")}");
+            
             GUILayout.FlexibleSpace();
 
             if (localData.Busy == true && GUILayout.Button("Cancel", ButtonStyle) == true)
@@ -136,7 +139,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
             if (GUILayout.Button("Small random file", ButtonStyle) == true)
             {
               localData.CancelAsyncOperations();
-              localData.Save(new TestData(Rand.Range(1, 10)),
+              localData.Save(new TestData(Rand.Range(1, 260)),
                              localData.NextAvailableName("File_.test"),
                              null,
                              (file) => { files = localData.GetFilesInfo(); });
@@ -145,7 +148,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
             if (GUILayout.Button("Small fixed file", ButtonStyle) == true)
             {
               localData.CancelAsyncOperations();
-              localData.Save(new TestData(10),
+              localData.Save(new TestData(260),
                              localData.NextAvailableName("File_.test"),
                              null,
                              (file) => { files = localData.GetFilesInfo(); });
@@ -154,7 +157,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
             if (GUILayout.Button("Large random file", ButtonStyle) == true)
             {
               localData.CancelAsyncOperations();
-              localData.Save(new TestData(Rand.Range(10000000, 100000000)),
+              localData.Save(new TestData(Rand.Range(2600000, 26000000)),
                              localData.NextAvailableName("File_.test"),
                              null,
                              (file) => { files = localData.GetFilesInfo(); });
@@ -163,7 +166,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
             if (GUILayout.Button("Large fixed file", ButtonStyle) == true)
             {
               localData.CancelAsyncOperations();
-              localData.Save(new TestData(100000000),
+              localData.Save(new TestData(26000000),
                              localData.NextAvailableName("File_.test"),
                              null,
                              (file) => { files = localData.GetFilesInfo(); });

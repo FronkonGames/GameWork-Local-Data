@@ -23,13 +23,13 @@ namespace FronkonGames.GameWork.Modules.LocalData
   /// <summary>
   /// .
   /// </summary>
-  public sealed class GZipCompressor : CompressorBase
+  public sealed class GZipCompressor : ICompressor
   {
     private readonly CompressionLevel compressionLevel;
 
     public GZipCompressor(CompressionLevel compressionLevel) => this.compressionLevel = compressionLevel;
 
-    public override async Task<byte[]> Compress(MemoryStream stream)
+    public async Task<byte[]> Compress(MemoryStream stream)
     {
       await using MemoryStream outStream = new();
       await using GZipStream gZipCompressor = new(outStream, compressionLevel, false);
@@ -40,9 +40,9 @@ namespace FronkonGames.GameWork.Modules.LocalData
       return outStream.ToArray();
     }
 
-    public override async Task<byte[]> Decompress(MemoryStream memoryStream, byte[] buffer, int originalSize)
+    public async Task<byte[]> Decompress(MemoryStream stream, byte[] buffer, int originalSize)
     {
-      await using GZipStream gZipCompressor = new(memoryStream, CompressionMode.Decompress);
+      await using GZipStream gZipCompressor = new(stream, CompressionMode.Decompress);
 
       await using MemoryStream outStream = new();
       int bytesRead = 0;
@@ -53,7 +53,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
           await outStream.WriteAsync(buffer, 0, bytesRead);
       } while (bytesRead > 0);
 
-      return memoryStream.ToArray();
+      return stream.ToArray();
     }
   }
 }
