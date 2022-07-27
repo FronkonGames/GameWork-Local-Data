@@ -15,9 +15,8 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 using System;
-using System.Collections.Generic;
-using UnityEngine;
 using FronkonGames.GameWork.Foundation;
+using Random = UnityEngine.Random;
 
 namespace FronkonGames.GameWork.Modules.LocalData
 {
@@ -29,7 +28,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
   {
     public string message;
 
-    public int[] ints;
+    public byte[] data;
 
     public TestData(int size)
     {
@@ -37,9 +36,9 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
       message = "All your base are belong to us!";
 
-      ints = new int[size];
-      for (int i = 0; i < ints.Length; ++i)
-        ints[i] = i;
+      data = new byte[size];
+      for (int i = 0; i < size; ++i)
+        data[i] = (byte)Random.Range(0, 254);
     }
   }
 }

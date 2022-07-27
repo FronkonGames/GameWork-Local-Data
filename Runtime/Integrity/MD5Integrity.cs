@@ -28,11 +28,11 @@ namespace FronkonGames.GameWork.Modules.LocalData
   {
     private readonly byte[] buffer;
 
-    public MD5Integrity(int bufferSize)
+    public MD5Integrity(byte[] buffer)
     {
-      Foundation.Check.GreaterOrEqual(bufferSize, 1024);
+      Foundation.Check.IsNotNullOrEmpty(buffer);
 
-      buffer = new byte[bufferSize];
+      this.buffer = buffer;
     }
 
     public async Task<string> Calculate(MemoryStream stream)
