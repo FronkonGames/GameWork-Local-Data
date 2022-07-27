@@ -24,8 +24,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
   /// </summary>
   public interface ICompressor
   {
-    public Task<byte[]> Compress(MemoryStream stream);
+    public Task<MemoryStream> Compress(MemoryStream stream);
 
-    public Task<byte[]> Decompress(MemoryStream stream, byte[] buffer, int originalSize);
+    public Task<MemoryStream> Decompress(MemoryStream stream, int originalSize);
   }  
 }

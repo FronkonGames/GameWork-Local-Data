@@ -217,13 +217,15 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// <param name="onProgress"></param>
     /// <param name="onEnd"></param>
     /// <typeparam name="T"></typeparam>
-    public async void Save<T>(T localData, string file,
-                              Action<int, int> onProgress = null,
-                              Action<T> onEnd = null) where T : ILocalData
+    public async void Write<T>(T localData, string file,
+                               Action<int, int> onProgress = null,
+                               Action<T> onEnd = null) where T : ILocalData
     {
       Check.IsNotNull(localData);
       Check.IsNotNullOrEmpty(file);
       Check.GreaterOrEqual(bufferSize, 4);
+
+      MemoryStream stream = new();
 
       try
       {
@@ -250,13 +252,12 @@ namespace FronkonGames.GameWork.Modules.LocalData
           writer.Write((byte)fileEncryption);
 
           BinaryFormatter binaryFormatter = new();
-          await using MemoryStream memoryStream = new();
           using (Profiling.Time($"Serializing {file}"))
           {
-            binaryFormatter.Serialize(memoryStream, localData);
+            binaryFormatter.Serialize(stream, localData);
           }
 
-          int uncompressedSize = (int)memoryStream.Length;
+          int uncompressedSize = (int)stream.Length;
 
           string hash = string.Empty;
           using (Profiling.Time($"Calculating {file} integrity"))
@@ -268,11 +269,10 @@ namespace FronkonGames.GameWork.Modules.LocalData
               _ => null
             };
 
-            hash = await integrity.Calculate(memoryStream);
+            hash = await integrity.Calculate(stream);
             writer.Write(hash);
           }
 
-          byte[] bytes;
           using (Profiling.Time($"Compressing {file} using {fileCompression.ToString()}"))
           {
             ICompressor compressor = fileCompression switch
@@ -281,10 +281,9 @@ namespace FronkonGames.GameWork.Modules.LocalData
               FileCompression.GZip   => new GZipCompressor(compressionLevel),
               _ => null
             };
-
             Check.IsNotNull(compressor);
-            bytes = await compressor.Compress(memoryStream);
-            memoryStream.Close();
+
+            stream = await compressor.Compress(stream);
           }
 
           using (Profiling.Time($"Encrypting {file} using {fileEncryption.ToString()}"))
@@ -295,9 +294,9 @@ namespace FronkonGames.GameWork.Modules.LocalData
               FileEncryption.AES  => new AESEncryptor(password, seed),
               _ => null
             };
-
             Check.IsNotNull(encryptor);
-            bytes = await encryptor.Encrypt(bytes);
+            
+            stream = await encryptor.Encrypt(stream);
           }
 
           writer.Write(uncompressedSize);
@@ -305,7 +304,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
           using (Profiling.Time($"Writing {fileName} data"))
           {
-            await fileStream.WriteAsync(bytes);
+            await fileStream.WriteAsync(stream.ToArray());
           }
         }
       }
@@ -315,6 +314,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
       }
       finally
       {
+        stream?.Dispose();
+
         cancellationSource = null;
 
         onEnd?.Invoke(localData);
@@ -327,17 +328,17 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// <param name="slot"></param>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    public async Task<T> Load<T>(string file, Action<int, int> onProgress = null, Action<T> onEnd = null) where T : LocalData
+    public async Task<T> Read<T>(string file, Action<int, int> onProgress = null, Action<T> onEnd = null) where T : LocalData
     {
       Check.IsNotNullOrEmpty(file);
       Check.GreaterOrEqual(bufferSize, 4);
 
       T data = null;
+      MemoryStream stream = new();
+      cancellationSource = new CancellationTokenSource();
 
       try
       {
-        cancellationSource = new CancellationTokenSource();
-
         FileInfo fileInfo = GetFileInfo(file);
         if (fileInfo != null)
         {
@@ -351,10 +352,9 @@ namespace FronkonGames.GameWork.Modules.LocalData
           FileCompression fileCompression = (FileCompression)binaryReader.ReadByte();
           FileEncryption fileEncryption = (FileEncryption)binaryReader.ReadByte();
           string hash = binaryReader.ReadString();
-          int size = binaryReader.ReadInt32();
+          int uncompressedSize = binaryReader.ReadInt32();
           int version = binaryReader.ReadInt32();
-          
-          await using MemoryStream stream = new();
+
           using (Profiling.Time($"Reading {file} data"))
           {
             int bytesRead = 0;
@@ -380,18 +380,35 @@ namespace FronkonGames.GameWork.Modules.LocalData
             Log.Info($"File {file} integrity {integrityOk}");
           }
 
-          // TODO: Decrypt.
-          
-          // TODO: Decompress.
-
-          if (stream.Length > 0)
+          using (Profiling.Time($"Decrypting {file}"))
           {
-            BinaryFormatter binaryFormatter = new();
-            stream.Seek(0, SeekOrigin.Begin);
-            data = binaryFormatter.Deserialize(stream) as T;
+            IEncryptor encryptor = fileEncryption switch
+            {
+              FileEncryption.None => new NullEncryptor(),
+              FileEncryption.AES  => new AESEncryptor(password, seed),
+              _ => null
+            };
 
-            // TODO: Check signature.
+            stream = await encryptor.Decrypt(stream);
           }
+
+          using (Profiling.Time($"Decompressing {file}"))
+          {
+            ICompressor compressor = fileCompression switch
+            {
+              FileCompression.None => new NullCompressor(),
+              FileCompression.GZip  => new GZipCompressor(compressionLevel),
+              _ => null
+            };
+
+            stream = await compressor.Decompress(stream, uncompressedSize);
+          }
+
+          BinaryFormatter binaryFormatter = new();
+          stream.Seek(0, SeekOrigin.Begin);
+          data = binaryFormatter.Deserialize(stream) as T;
+
+          Log.Info($"File {file} signature {data.Signature.Equals(fileSignature)}");
         }
         else
           Log.Error($"File {Path}{file} not found");
@@ -406,6 +423,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
       }
       finally
       {
+        stream?.Dispose();
+        
         cancellationSource = null;
 
         onEnd?.Invoke(data);

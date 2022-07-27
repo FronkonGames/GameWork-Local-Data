@@ -108,7 +108,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
                       fileSelected = i;
                       testData = null;
 
-                      localData.Load<TestData>(files[i].Name, (read, total) => LoadingText = $"Loading ({read.BytesToHumanReadable()}/{total.BytesToHumanReadable()})", (file) => testData = file);
+                      localData.Read<TestData>(files[i].Name, (read, total) => LoadingText = $"Reading ({read.BytesToHumanReadable()}/{total.BytesToHumanReadable()})", (file) => testData = file);
                     }
                   }
                   GUILayout.EndHorizontal();
@@ -139,7 +139,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
             if (GUILayout.Button("Small random file", ButtonStyle) == true)
             {
               localData.CancelAsyncOperations();
-              localData.Save(new TestData(Rand.Range(1, 260)),
+              localData.Write(new TestData(Rand.Range(1, 260)),
                              localData.NextAvailableName("File_.test"),
                              null,
                              (file) => { files = localData.GetFilesInfo(); });
@@ -148,7 +148,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
             if (GUILayout.Button("Small fixed file", ButtonStyle) == true)
             {
               localData.CancelAsyncOperations();
-              localData.Save(new TestData(260),
+              localData.Write(new TestData(260),
                              localData.NextAvailableName("File_.test"),
                              null,
                              (file) => { files = localData.GetFilesInfo(); });
@@ -157,7 +157,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
             if (GUILayout.Button("Large random file", ButtonStyle) == true)
             {
               localData.CancelAsyncOperations();
-              localData.Save(new TestData(Rand.Range(2600000, 26000000)),
+              localData.Write(new TestData(Rand.Range(2600000, 26000000)),
                              localData.NextAvailableName("File_.test"),
                              null,
                              (file) => { files = localData.GetFilesInfo(); });
@@ -166,7 +166,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
             if (GUILayout.Button("Large fixed file", ButtonStyle) == true)
             {
               localData.CancelAsyncOperations();
-              localData.Save(new TestData(26000000),
+              localData.Write(new TestData(26000000),
                              localData.NextAvailableName("File_.test"),
                              null,
                              (file) => { files = localData.GetFilesInfo(); });
@@ -207,7 +207,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
               {
                 GUILayout.Label($"Message: {testData.message}");
                 GUILayout.Label($"Ints count: {testData.ints.Length.ToString()}");
-                GUILayout.Label($"Ints: {string.Join(",", testData.ints[..9])}");
+                GUILayout.Label($"Ints: {string.Join(",", testData.ints[..10])}");
               }
             }
             GUILayout.EndVertical();

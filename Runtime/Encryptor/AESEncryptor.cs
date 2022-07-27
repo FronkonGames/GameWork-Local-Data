@@ -40,17 +40,36 @@ namespace FronkonGames.GameWork.Modules.LocalData
       IV = rfc.GetBytes(16);
     }
     
-    public async Task<byte[]> Encrypt(byte[] bytes)
+    public async Task<MemoryStream> Encrypt(MemoryStream stream)
     {
-      await using MemoryStream encryptedStream = new();
+      Check.IsNotNull(stream);
+
+      stream.Seek(0, SeekOrigin.Begin);
+
+      MemoryStream encryptedStream = new();
       using AesCryptoServiceProvider aesProvider = new();
       await using CryptoStream cryptoStream = new(encryptedStream, aesProvider.CreateEncryptor(Key, IV), CryptoStreamMode.Write);
 
-      await cryptoStream.WriteAsync(bytes, 0, bytes.Length);
+      await cryptoStream.WriteAsync(stream.ToArray(), 0, (int)stream.Length);
+      cryptoStream.FlushFinalBlock();
       
-      return encryptedStream.ToArray();
+      return encryptedStream;
     }
 
-    public async Task<byte[]> Decrypt(byte[] bytes) => bytes;
+    public async Task<MemoryStream> Decrypt(MemoryStream stream)
+    {
+      Check.IsNotNull(stream);
+
+      stream.Seek(0, SeekOrigin.Begin);
+
+      await using MemoryStream encryptedStream = new(stream.ToArray());
+      using AesCryptoServiceProvider aesProvider = new();
+      await using CryptoStream cryptoStream = new(encryptedStream, aesProvider.CreateDecryptor(Key, IV), CryptoStreamMode.Read);
+
+      MemoryStream copy = new();
+      await cryptoStream.CopyToAsync(copy);
+
+      return copy;
+    }
   }
 }

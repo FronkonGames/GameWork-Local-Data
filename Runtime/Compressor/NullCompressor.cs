@@ -24,8 +24,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
   /// </summary>
   public sealed class NullCompressor : ICompressor
   {
-    public async Task<byte[]> Compress(MemoryStream stream) => stream.ToArray();
+    public async Task<MemoryStream> Compress(MemoryStream stream) => stream;
 
-    public async Task<byte[]> Decompress(MemoryStream stream, byte[] buffer, int originalSize) => stream.ToArray();
+    public async Task<MemoryStream> Decompress(MemoryStream stream, int originalSize) => stream;
   }
 }

@@ -263,9 +263,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bufferSize: 32
   fileIntegrity: 1
-  fileCompression: 0
-  compressionLevel: 1
-  fileEncryption: 0
+  fileCompression: 1
+  compressionLevel: 0
+  fileEncryption: 1
   password: Password
   seed: 1bb6bd0e-37ae-4701-b8aa-f5bf2415
 --- !u!1 &1440672285

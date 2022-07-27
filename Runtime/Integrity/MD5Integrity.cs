@@ -49,6 +49,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
       
       md5.TransformFinalBlock(buffer, 0, 0);
       
+      stream.Seek(0, SeekOrigin.Begin);
+      
       return BitConverter.ToString(md5.Hash).Replace("-", "").ToUpperInvariant();
     }
 

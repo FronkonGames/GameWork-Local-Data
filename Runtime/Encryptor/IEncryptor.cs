@@ -14,6 +14,8 @@
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+using System.IO;
 using System.Threading.Tasks;
 
 namespace FronkonGames.GameWork.Modules.LocalData
@@ -23,8 +25,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
   /// </summary>
   public interface IEncryptor
   {
-    public Task<byte[]> Encrypt(byte[] bytes);
+    public Task<MemoryStream> Encrypt(MemoryStream stream);
 
-    public Task<byte[]> Decrypt(byte[] bytes);
+    public Task<MemoryStream> Decrypt(MemoryStream stream);
   }
 }

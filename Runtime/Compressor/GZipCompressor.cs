@@ -17,6 +17,7 @@
 using System.IO;
 using System.IO.Compression;
 using System.Threading.Tasks;
+using FronkonGames.GameWork.Foundation;
 
 namespace FronkonGames.GameWork.Modules.LocalData
 {
@@ -29,31 +30,35 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
     public GZipCompressor(CompressionLevel compressionLevel) => this.compressionLevel = compressionLevel;
 
-    public async Task<byte[]> Compress(MemoryStream stream)
+    public async Task<MemoryStream> Compress(MemoryStream stream)
     {
-      await using MemoryStream outStream = new();
-      await using GZipStream gZipCompressor = new(outStream, compressionLevel, false);
+      Check.IsNotNull(stream);
+      
+      stream.Seek(0, SeekOrigin.Begin);
 
-      byte[] bytes = stream.ToArray();
-      await gZipCompressor.WriteAsync(bytes, 0, bytes.Length);
+      MemoryStream compressedStream = new();
+      await using GZipStream gzipStream = new(compressedStream, compressionLevel, true);
 
-      return outStream.ToArray();
+      await stream.CopyToAsync(gzipStream);
+
+      return compressedStream;
     }
 
-    public async Task<byte[]> Decompress(MemoryStream stream, byte[] buffer, int originalSize)
+    public async Task<MemoryStream> Decompress(MemoryStream stream, int originalSize)
     {
-      await using GZipStream gZipCompressor = new(stream, CompressionMode.Decompress);
+      Check.IsNotNull(stream);
+      Check.Greater(originalSize, 0);
 
-      await using MemoryStream outStream = new();
-      int bytesRead = 0;
-      do
-      {
-        bytesRead = await gZipCompressor.ReadAsync(buffer, 0, buffer.Length);
-        if (bytesRead > 0)
-          await outStream.WriteAsync(buffer, 0, bytesRead);
-      } while (bytesRead > 0);
+      stream.Seek(0, SeekOrigin.Begin);
+      
+      MemoryStream uncompressedStream = new(originalSize);
+      await using GZipStream gzipStream = new(stream, CompressionMode.Decompress, true);
 
-      return stream.ToArray();
+      await gzipStream.CopyToAsync(uncompressedStream);
+
+      uncompressedStream.Seek(0, SeekOrigin.Begin);
+
+      return uncompressedStream;
     }
   }
 }
