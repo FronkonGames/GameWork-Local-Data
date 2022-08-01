@@ -25,8 +25,18 @@ namespace FronkonGames.GameWork.Modules.LocalData
   /// </summary>
   public sealed class NullIntegrity : IIntegrity
   {
-    public async Task<string> Calculate(MemoryStream stream) => string.Empty; 
+    public async Task<string> Calculate(MemoryStream stream, Action<float> progress = null)
+    {
+      progress?.Invoke(0.0f);
 
-    public async Task<bool> Check(MemoryStream stream, string hash) => true; 
+      return string.Empty; 
+    }
+
+    public async Task<bool> Check(MemoryStream stream, string hash, Action<float> progress = null)
+    {
+      progress?.Invoke(0.0f);
+
+      return true;
+    }
   }
 }

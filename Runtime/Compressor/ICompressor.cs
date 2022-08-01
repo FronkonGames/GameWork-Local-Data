@@ -14,6 +14,7 @@
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+using System;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -24,8 +25,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
   /// </summary>
   public interface ICompressor
   {
-    public Task<MemoryStream> Compress(MemoryStream stream);
+    public Task<MemoryStream> Compress(MemoryStream stream, Action<float> progress = null);
 
-    public Task<MemoryStream> Decompress(MemoryStream stream, int originalSize);
+    public Task<MemoryStream> Decompress(MemoryStream stream, int originalSize, Action<float> progress = null);
   }  
 }

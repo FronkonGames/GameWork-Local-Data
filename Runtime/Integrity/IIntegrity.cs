@@ -25,8 +25,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
   /// </summary>
   public interface IIntegrity
   {
-    public Task<string> Calculate(MemoryStream stream);
+    public Task<string> Calculate(MemoryStream stream, Action<float> progress = null);
     
-    public Task<bool> Check(MemoryStream stream, string hash);
+    public Task<bool> Check(MemoryStream stream, string hash, Action<float> progress = null);
   }
 }

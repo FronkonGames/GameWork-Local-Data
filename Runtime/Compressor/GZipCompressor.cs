@@ -14,6 +14,7 @@
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+using System;
 using System.IO;
 using System.IO.Compression;
 using System.Threading.Tasks;
@@ -30,7 +31,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
     public GZipCompressor(CompressionLevel compressionLevel) => this.compressionLevel = compressionLevel;
 
-    public async Task<MemoryStream> Compress(MemoryStream stream)
+    public async Task<MemoryStream> Compress(MemoryStream stream, Action<float> progress = null)
     {
       Check.IsNotNull(stream);
       
@@ -40,11 +41,13 @@ namespace FronkonGames.GameWork.Modules.LocalData
       await using GZipStream gzipStream = new(compressedStream, compressionLevel, true);
 
       await stream.CopyToAsync(gzipStream);
+      
+      progress?.Invoke(1.0f);
 
       return compressedStream;
     }
 
-    public async Task<MemoryStream> Decompress(MemoryStream stream, int originalSize)
+    public async Task<MemoryStream> Decompress(MemoryStream stream, int originalSize, Action<float> progress = null)
     {
       Check.IsNotNull(stream);
       Check.Greater(originalSize, 0);
@@ -58,6 +61,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
       uncompressedStream.Seek(0, SeekOrigin.Begin);
 
+      progress?.Invoke(1.0f);
+      
       return uncompressedStream;
     }
   }

@@ -28,33 +28,38 @@ namespace FronkonGames.GameWork.Modules.LocalData
   {
     private readonly byte[] buffer;
 
-    public MD5Integrity(byte[] buffer)
+    public MD5Integrity(int bufferSize)
     {
-      Foundation.Check.IsNotNullOrEmpty(buffer);
+      Foundation.Check.Greater(bufferSize, 1024);
 
-      this.buffer = buffer;
+      buffer = new byte[bufferSize];
     }
 
-    public async Task<string> Calculate(MemoryStream stream)
+    public async Task<string> Calculate(MemoryStream stream, Action<float> progress = null)
     {
-      int bytesRead;
+      int bytesRead, bytesReadTotal = 0;
 
+      stream.Seek(0, SeekOrigin.Begin);
+      
       using MD5 md5 = MD5.Create();
       do
       {
         bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
         if (bytesRead > 0)
           md5.TransformBlock(buffer, 0, bytesRead, null, 0);
+
+        bytesReadTotal += bytesRead;
+        progress?.Invoke((float)bytesReadTotal / stream.Length);
       } while (bytesRead > 0);
-      
+
       md5.TransformFinalBlock(buffer, 0, 0);
       
       stream.Seek(0, SeekOrigin.Begin);
-      
+
       return BitConverter.ToString(md5.Hash).Replace("-", "").ToUpperInvariant();
     }
 
-    public async Task<bool> Check(MemoryStream stream, string hash)
+    public async Task<bool> Check(MemoryStream stream, string hash, Action<float> progress = null)
     {
       string streamHash = await Calculate(stream);
 

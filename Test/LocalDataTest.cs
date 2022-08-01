@@ -14,7 +14,6 @@
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -50,7 +49,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
     private GUIStyle buttonStyle;
 
     private Vector2 scrollView;
-    private string opertionsLabel = "NO ACTIVE FILE OPERATIONS";
+    private string statusLabel = "NO ACTIVE FILE OPERATIONS";
 
     private int kilobytes = 10;
     private int megabytes = 0;
@@ -119,12 +118,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
                       testData = null;
 
                       localData.Read<TestData>(files[i].Name,
-                        progress => opertionsLabel = $"READING {(progress * 100.0f):00}",
-                        file =>
-                        {
-                          opertionsLabel = "NO ACTIVE FILE OPERATIONS";
-                          testData = file;
-                        });
+                        progress => statusLabel = $"READING {(progress * 100.0f):00}%",
+                        (result, file) => { statusLabel = "NO ACTIVE FILE OPERATIONS"; testData = file; });
                     }
                   }
                   GUILayout.EndHorizontal();
@@ -143,7 +138,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
               GUILayout.BeginHorizontal();
               {
                 GUILayout.FlexibleSpace();
-                GUILayout.Label(opertionsLabel, fontStyle);
+                GUILayout.Label(statusLabel, FontStyle);
                 GUILayout.FlexibleSpace();
               }
               GUILayout.EndHorizontal();
@@ -179,8 +174,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
                 localData.CancelAsyncOperations();
                 localData.Write(new TestData(megabytes * 1024 * 1024 + kilobytes * 1024),
                   localData.NextAvailableName("File_.test"),
-                  null,
-                  (file) => { files = localData.GetFilesInfo(); });
+                  progress => statusLabel = $"WRITING {(progress * 100.0f):00}%",
+                  (result, file) => { files = localData.GetFilesInfo(); statusLabel = "NO ACTIVE FILE OPERATIONS"; });
               }
               
               GUILayout.Space(margin);
@@ -211,7 +206,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
           GUILayout.EndHorizontal();
 
           GUILayout.Space(margin);
-          
+
           GUILayout.BeginHorizontal();
           {
             GUILayout.Space(margin);
@@ -220,15 +215,14 @@ namespace FronkonGames.GameWork.Modules.LocalData
             {
               if (fileSelected != -1 && testData != null)
               {
-                GUILayout.Label($"File '{files[fileSelected].Name}'", FontStyle);
+                GUILayout.Label($"File '{files[fileSelected].Name}' ({testData.data.Length.BytesToHumanReadable()})", FontStyle);
               
                 GUILayout.BeginVertical("box", GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
                 {
                   GUILayout.Label($"Message: {testData.message}");
-                  GUILayout.Label($"Data size: {testData.data.Length.BytesToHumanReadable()}");
                   
-                  string hex = BitConverter.ToString(testData.data[..Math.Min(testData.data.Length, 600)]).Replace("-","");
-                  GUILayout.TextArea(testData.data.Length <= 600 ? hex : hex + "...");
+                  string hex = BitConverter.ToString(testData.data[..Math.Min(testData.data.Length, 700)]).Replace("-","");
+                  GUILayout.TextArea(testData.data.Length <= 700 ? hex : hex + "...");
                 }
                 GUILayout.EndVertical();
               }
@@ -240,13 +234,13 @@ namespace FronkonGames.GameWork.Modules.LocalData
             GUILayout.Space(margin);
           }
           GUILayout.EndHorizontal();
-          
+
           GUILayout.Space(margin);
         }
         GUILayout.EndVertical();
 
         GUILayout.FlexibleSpace();
-        
+
         GUILayout.Space(margin);
       }
       GUILayout.EndHorizontal();

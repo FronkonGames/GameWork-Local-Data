@@ -14,7 +14,7 @@
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#define ENABLE_PROFILING
+//#define ENABLE_PROFILING
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -73,13 +73,15 @@ namespace FronkonGames.GameWork.Modules.LocalData
     [SerializeField, Indent, Password, OnlyEnableInEdit]
     private string seed;
 
-    private byte[] buffer;
-
     private IIntegrity integrity;
     private ICompressor compressor;
     private IEncryptor encryptor;
 
     private CancellationTokenSource cancellationSource;
+
+    private Action<float> clientProgress;
+    private float currentProgress;
+    private int progressSteps;
 
     /// <summary>
     /// When initialize.
@@ -88,12 +90,10 @@ namespace FronkonGames.GameWork.Modules.LocalData
     {
       cancellationSource = null;
 
-      buffer = new byte[bufferSize * 1024];
-
       integrity = fileIntegrity switch
       {
         FileIntegrity.None => new NullIntegrity(),
-        FileIntegrity.MD5  => new MD5Integrity(buffer),
+        FileIntegrity.MD5  => new MD5Integrity(bufferSize * 1024),
         _ => null
       };
       Check.IsNotNull(integrity);
@@ -251,11 +251,13 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// <typeparam name="T"></typeparam>
     public async void Write<T>(T localData, string file,
                                Action<float> onProgress = null,
-                               Action<T> onEnd = null) where T : ILocalData
+                               Action<FileResult, T> onEnd = null) where T : ILocalData
     {
       Check.IsNotNull(localData);
       Check.IsNotNullOrEmpty(file);
       Check.GreaterOrEqual(bufferSize, 4);
+
+      FileResult result = FileResult.Ok;
 
       MemoryStream stream = new();
       cancellationSource = new();
@@ -284,6 +286,13 @@ namespace FronkonGames.GameWork.Modules.LocalData
           writer.Write((byte)fileCompression);
           writer.Write((byte)fileEncryption);
 
+          clientProgress = onProgress;
+          currentProgress = 0.0f;
+          progressSteps = 1;
+          if (fileIntegrity != FileIntegrity.None)     progressSteps++;
+          if (fileCompression != FileCompression.None) progressSteps++;
+          if (fileEncryption != FileEncryption.None)   progressSteps++;
+
           BinaryFormatter binaryFormatter = new();
 #if ENABLE_PROFILING
           using (Profiling.Time($"Serializing {file}"))
@@ -299,29 +308,32 @@ namespace FronkonGames.GameWork.Modules.LocalData
           using (Profiling.Time($"Calculating {file} integrity"))
 #endif
           {
-            hash = await integrity.Calculate(stream);
+            hash = await integrity.Calculate(stream, CalculateProgress);
             writer.Write(hash);
-            
-            onProgress?.Invoke(0.166f);
           }
 
+          if (fileIntegrity != FileIntegrity.None)
+            currentProgress += 1.0f / progressSteps;
+          
 #if ENABLE_PROFILING
           using (Profiling.Time($"Compressing {file} using {fileCompression}"))
 #endif
           {
-            stream = await compressor.Compress(stream);
-            
-            onProgress?.Invoke(0.333f);
+            stream = await compressor.Compress(stream, CalculateProgress);
           }
+
+          if (fileCompression != FileCompression.None)
+            currentProgress += 1.0f / progressSteps;
 
 #if ENABLE_PROFILING
           using (Profiling.Time($"Encrypting {file} using {fileEncryption}"))
 #endif
           {
-            stream = await encryptor.Encrypt(stream);
-            
-            onProgress?.Invoke(0.5f);
+            stream = await encryptor.Encrypt(stream, CalculateProgress);
           }
+
+          if (fileEncryption != FileEncryption.None)
+            currentProgress += 1.0f / progressSteps;
           
           writer.Write(uncompressedSize);
           writer.Write(localData.Version);
@@ -336,26 +348,33 @@ namespace FronkonGames.GameWork.Modules.LocalData
               int length = Math.Min(bufferSize * 1024, data.Length - offset);
               await fileStream.WriteAsync(data, offset, length);
               offset += length;
-              
-              onProgress?.Invoke(Mathf.Round(offset * 0.5f / data.Length) + 0.5f);
+
+              onProgress?.Invoke((float)offset / data.Length * (1.0f / progressSteps) + currentProgress);
             }
-            //await fileStream.WriteAsync(stream.ToArray());
           }
         }
       }
+      catch (OperationCanceledException e)
+      {
+        result = FileResult.Cancelled;
+
+        Log.Warning($"File '{file}' writing canceled.");
+      }
       catch (Exception e)
       {
+        result = FileResult.ExceptionRaised;
+
         Log.Exception(e.ToString());
       }
       finally
       {
-        stream?.Dispose();
+        await stream.DisposeAsync();
 
         cancellationSource = null;
 
         onProgress?.Invoke(1.0f);
         
-        onEnd?.Invoke(localData);
+        onEnd?.Invoke(result, localData);
       }
     }
     
@@ -365,13 +384,15 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// <param name="slot"></param>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    public async Task<T> Read<T>(string file,
-                                 Action<float> onProgress = null,
-                                 Action<T> onEnd = null) where T : LocalData
+    public async Task Read<T>(string file,
+                              Action<float> onProgress = null,
+                              Action<FileResult, T> onEnd = null) where T : LocalData
     {
       Check.IsNotNullOrEmpty(file);
       Check.GreaterOrEqual(bufferSize, 4);
 
+      FileResult result = FileResult.Ok;
+      
       T data = null;
       MemoryStream stream = new();
       cancellationSource = new CancellationTokenSource();
@@ -396,6 +417,11 @@ namespace FronkonGames.GameWork.Modules.LocalData
           int uncompressedSize = binaryReader.ReadInt32();
           int version = binaryReader.ReadInt32();
 
+          int steps = 1;
+          if (fileIntegrity != FileIntegrity.None)     steps++;
+          if (fileCompression != FileCompression.None) steps++;
+          if (fileEncryption != FileEncryption.None)   steps++;
+
 #if ENABLE_PROFILING
           using (Profiling.Time($"Reading {file} data"))
 #endif
@@ -406,6 +432,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
               bytesRead = await fileStream.ReadAsync(buffer, 0, buffer.Length);
               if (bytesRead > 0)
                 await stream.WriteAsync(buffer, 0, bytesRead);
+              
+              onProgress?.Invoke(((float)stream.Length / fileStream.Length) * 0.5f);
             } while (bytesRead > 0);
           }
           
@@ -413,40 +441,49 @@ namespace FronkonGames.GameWork.Modules.LocalData
           using (Profiling.Time($"Checking {file} integrity"))
 #endif
           {
-            bool integrityOk = await integrity.Check(stream, hash);
+            result = await integrity.Check(stream, hash) ? FileResult.Ok : FileResult.IntegrityFailure;
+
+            onProgress?.Invoke(0.666f);
+          }
+
+          if (result == FileResult.Ok)
+          {
+#if ENABLE_PROFILING
+            using (Profiling.Time($"Decrypting {file}"))
+#endif
+            {
+              stream = await encryptor.Decrypt(stream);
             
-            Log.Info($"File {file} integrity {integrityOk}");
-          }
+              onProgress?.Invoke(0.832f);
+            }
 
 #if ENABLE_PROFILING
-          using (Profiling.Time($"Decrypting {file}"))
+            using (Profiling.Time($"Decompressing {file}"))
 #endif
-          {
-            stream = await encryptor.Decrypt(stream);
+            {
+              stream = await compressor.Decompress(stream, uncompressedSize);
+            }
+
+            BinaryFormatter binaryFormatter = new();
+            stream.Seek(0, SeekOrigin.Begin);
+            data = binaryFormatter.Deserialize(stream) as T;
+
+            result = data.Signature.Equals(fileSignature) ? FileResult.Ok : FileResult.InvalidSignature;
           }
-
-#if ENABLE_PROFILING
-          using (Profiling.Time($"Decompressing {file}"))
-#endif
-          {
-            stream = await compressor.Decompress(stream, uncompressedSize);
-          }
-
-          BinaryFormatter binaryFormatter = new();
-          stream.Seek(0, SeekOrigin.Begin);
-          data = binaryFormatter.Deserialize(stream) as T;
-
-          Log.Info($"File {file} signature {data.Signature.Equals(fileSignature)}");
         }
         else
           Log.Error($"File {Path}{file} not found");
       }
       catch (OperationCanceledException e)
       {
+        result = FileResult.Cancelled;
+
         Log.Warning($"File '{file}' loading canceled.");
       }
       catch (Exception e)
       {
+        result = FileResult.ExceptionRaised;
+
         Log.Exception(e.ToString());
       }
       finally
@@ -455,10 +492,10 @@ namespace FronkonGames.GameWork.Modules.LocalData
         
         cancellationSource = null;
 
-        onEnd?.Invoke(data);
-      }
+        onProgress?.Invoke(1.0f);
 
-      return data;
+        onEnd?.Invoke(result, data);
+      }
     }
 
     /// <summary>
@@ -482,6 +519,13 @@ namespace FronkonGames.GameWork.Modules.LocalData
       }
       else
         Log.Warning($"File '{file}' not found");
+    }
+
+    private void CalculateProgress(float progress)
+    {
+      Check.NotEqual(progressSteps, 0);
+
+      clientProgress?.Invoke((progress / progressSteps + currentProgress) * 0.5f);
     }
 
     private static string ComposePath()

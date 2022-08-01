@@ -14,19 +14,19 @@
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-using System;
-using System.IO;
-using System.Threading.Tasks;
 
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
   /// .
   /// </summary>
-  public interface IEncryptor
+  public enum FileResult
   {
-    public Task<MemoryStream> Encrypt(MemoryStream stream, Action<float> progress = null);
-
-    public Task<MemoryStream> Decrypt(MemoryStream stream, Action<float> progress = null);
+    Ok,
+    Cancelled,
+    InvalidSignature,
+    IntegrityFailure,
+    FileNotFound,
+    ExceptionRaised
   }
 }

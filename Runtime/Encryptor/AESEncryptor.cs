@@ -14,6 +14,7 @@
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+using System;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -40,7 +41,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
       IV = rfc.GetBytes(16);
     }
     
-    public async Task<MemoryStream> Encrypt(MemoryStream stream)
+    public async Task<MemoryStream> Encrypt(MemoryStream stream, Action<float> progress = null)
     {
       Check.IsNotNull(stream);
 
@@ -52,11 +53,13 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
       await cryptoStream.WriteAsync(stream.ToArray(), 0, (int)stream.Length);
       cryptoStream.FlushFinalBlock();
+
+      progress?.Invoke(1.0f);
       
       return encryptedStream;
     }
 
-    public async Task<MemoryStream> Decrypt(MemoryStream stream)
+    public async Task<MemoryStream> Decrypt(MemoryStream stream, Action<float> progress = null)
     {
       Check.IsNotNull(stream);
 
@@ -69,6 +72,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
       MemoryStream copy = new();
       await cryptoStream.CopyToAsync(copy);
 
+      progress?.Invoke(1.0f);
+      
       return copy;
     }
   }
