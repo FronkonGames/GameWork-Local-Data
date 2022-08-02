@@ -27,22 +27,40 @@ namespace FronkonGames.GameWork.Modules.LocalData
   /// </summary>
   public sealed class GZipCompressor : ICompressor
   {
+    private readonly byte[] buffer;
+    
     private readonly CompressionLevel compressionLevel;
 
-    public GZipCompressor(CompressionLevel compressionLevel) => this.compressionLevel = compressionLevel;
+    public GZipCompressor(int bufferSize, CompressionLevel compressionLevel)
+    {
+      Check.Greater(bufferSize, 1);
+
+      buffer = new byte[bufferSize * 1024];
+
+      this.compressionLevel = compressionLevel;
+    }
 
     public async Task<MemoryStream> Compress(MemoryStream stream, Action<float> progress = null)
     {
       Check.IsNotNull(stream);
-      
-      stream.Seek(0, SeekOrigin.Begin);
+
+      int bytesRead, bytesReadTotal = 0;
+      stream.Position = 0;
 
       MemoryStream compressedStream = new();
       await using GZipStream gzipStream = new(compressedStream, compressionLevel, true);
+      do
+      {
+        bytesRead = await stream.ReadAsync(buffer);
+        if (bytesRead > 0)
+          await gzipStream.WriteAsync(buffer);
 
-      await stream.CopyToAsync(gzipStream);
+        bytesReadTotal += bytesRead;
+        progress?.Invoke((float)bytesReadTotal / stream.Length);
+      } while (bytesRead > 0);
       
-      progress?.Invoke(1.0f);
+      stream.Close();
+      compressedStream.Position = 0;
 
       return compressedStream;
     }
@@ -51,18 +69,25 @@ namespace FronkonGames.GameWork.Modules.LocalData
     {
       Check.IsNotNull(stream);
       Check.Greater(originalSize, 0);
-
-      stream.Seek(0, SeekOrigin.Begin);
       
+      int bytesRead, bytesReadTotal = 0;
+      stream.Position = 0;
+
       MemoryStream uncompressedStream = new(originalSize);
       await using GZipStream gzipStream = new(stream, CompressionMode.Decompress, true);
+      do
+      {
+        bytesRead = await gzipStream.ReadAsync(buffer);
+        if (bytesRead > 0)
+          await uncompressedStream.WriteAsync(buffer);
 
-      await gzipStream.CopyToAsync(uncompressedStream);
+        bytesReadTotal += bytesRead;
+        progress?.Invoke((float)bytesReadTotal / stream.Length);
+      } while (bytesRead > 0);
 
-      uncompressedStream.Seek(0, SeekOrigin.Begin);
+      stream.Close();
+      uncompressedStream.Position = 0;
 
-      progress?.Invoke(1.0f);
-      
       return uncompressedStream;
     }
   }

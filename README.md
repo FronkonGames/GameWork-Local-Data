@@ -35,7 +35,7 @@
   "dependencies":
   {
     ...
-    "FronkonGames.GameWork.Modules.SaveData": "git+https://github.com/FronkonGames/GameWork-Local-Data.git",
+    "FronkonGames.GameWork.Modules.LocalData": "git+https://github.com/FronkonGames/GameWork-Local-Data.git",
     "FronkonGames.GameWork.Core": "git+https://github.com/FronkonGames/GameWork-Core.git",
     "FronkonGames.GameWork.Foundation": "git+https://github.com/FronkonGames/GameWork-Foundation.git"
   }

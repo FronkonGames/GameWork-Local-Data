@@ -73,10 +73,6 @@ namespace FronkonGames.GameWork.Modules.LocalData
     [SerializeField, Indent, Password, OnlyEnableInEdit]
     private string seed;
 
-    private IIntegrity integrity;
-    private ICompressor compressor;
-    private IEncryptor encryptor;
-
     private CancellationTokenSource cancellationSource;
 
     private Action<float> clientProgress;
@@ -90,30 +86,6 @@ namespace FronkonGames.GameWork.Modules.LocalData
     {
       cancellationSource = null;
 
-      integrity = fileIntegrity switch
-      {
-        FileIntegrity.None => new NullIntegrity(),
-        FileIntegrity.MD5  => new MD5Integrity(bufferSize * 1024),
-        _ => null
-      };
-      Check.IsNotNull(integrity);
-
-      compressor = fileCompression switch
-      {
-        FileCompression.None   => new NullCompressor(),
-        FileCompression.GZip   => new GZipCompressor(compressionLevel),
-        _ => null
-      };
-      Check.IsNotNull(compressor);
-      
-      encryptor = fileEncryption switch
-      {
-        FileEncryption.None => new NullEncryptor(),
-        FileEncryption.AES  => new AESEncryptor(password, seed),
-        _ => null
-      };
-      Check.IsNotNull(encryptor);
-      
       Path = ComposePath();
       
       Log.Info($"Using path '{Path}'");
@@ -293,11 +265,35 @@ namespace FronkonGames.GameWork.Modules.LocalData
           if (fileCompression != FileCompression.None) progressSteps++;
           if (fileEncryption != FileEncryption.None)   progressSteps++;
 
-          BinaryFormatter binaryFormatter = new();
+          IIntegrity integrity = fileIntegrity switch
+          {
+            FileIntegrity.None => new NullIntegrity(),
+            FileIntegrity.MD5  => new MD5Integrity(bufferSize),
+            _ => null
+          };
+          Check.IsNotNull(integrity);
+
+          ICompressor compressor = fileCompression switch
+          {
+            FileCompression.None   => new NullCompressor(),
+            FileCompression.GZip   => new GZipCompressor(bufferSize, compressionLevel),
+            _ => null
+          };
+          Check.IsNotNull(compressor);
+      
+          IEncryptor encryptor = fileEncryption switch
+          {
+            FileEncryption.None => new NullEncryptor(),
+            FileEncryption.AES  => new AESEncryptor(bufferSize, password, seed),
+            _ => null
+          };
+          Check.IsNotNull(encryptor);
+
 #if ENABLE_PROFILING
           using (Profiling.Time($"Serializing {file}"))
 #endif
           {
+            BinaryFormatter binaryFormatter = new();
             binaryFormatter.Serialize(stream, localData);
           }
 
@@ -309,8 +305,9 @@ namespace FronkonGames.GameWork.Modules.LocalData
 #endif
           {
             hash = await integrity.Calculate(stream, CalculateProgress);
-            writer.Write(hash);
           }
+
+          writer.Write(hash);
 
           if (fileIntegrity != FileIntegrity.None)
             currentProgress += 1.0f / progressSteps;
@@ -360,12 +357,14 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
         Log.Warning($"File '{file}' writing canceled.");
       }
+/* 
       catch (Exception e)
       {
         result = FileResult.ExceptionRaised;
 
         Log.Exception(e.ToString());
       }
+*/
       finally
       {
         await stream.DisposeAsync();
@@ -422,6 +421,30 @@ namespace FronkonGames.GameWork.Modules.LocalData
           if (fileCompression != FileCompression.None) steps++;
           if (fileEncryption != FileEncryption.None)   steps++;
 
+          IIntegrity integrity = fileIntegrity switch
+          {
+            FileIntegrity.None => new NullIntegrity(),
+            FileIntegrity.MD5  => new MD5Integrity(bufferSize),
+            _ => null
+          };
+          Check.IsNotNull(integrity);
+
+          ICompressor compressor = fileCompression switch
+          {
+            FileCompression.None   => new NullCompressor(),
+            FileCompression.GZip   => new GZipCompressor(bufferSize, compressionLevel),
+            _ => null
+          };
+          Check.IsNotNull(compressor);
+      
+          IEncryptor encryptor = fileEncryption switch
+          {
+            FileEncryption.None => new NullEncryptor(),
+            FileEncryption.AES  => new AESEncryptor(bufferSize, password, seed),
+            _ => null
+          };
+          Check.IsNotNull(encryptor);
+
 #if ENABLE_PROFILING
           using (Profiling.Time($"Reading {file} data"))
 #endif
@@ -464,9 +487,14 @@ namespace FronkonGames.GameWork.Modules.LocalData
               stream = await compressor.Decompress(stream, uncompressedSize);
             }
 
-            BinaryFormatter binaryFormatter = new();
-            stream.Seek(0, SeekOrigin.Begin);
-            data = binaryFormatter.Deserialize(stream) as T;
+#if ENABLE_PROFILING
+            using (Profiling.Time($"Deserializing {file}"))
+#endif
+            {
+              BinaryFormatter binaryFormatter = new();
+              stream.Position = 0;
+              data = binaryFormatter.Deserialize(stream) as T;
+            }
 
             result = data.Signature.Equals(fileSignature) ? FileResult.Ok : FileResult.InvalidSignature;
           }

@@ -38,7 +38,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
       data = new byte[size];
       for (int i = 0; i < size; ++i)
-        data[i] = (byte)Random.Range(0, 254);
+        data[i] = (byte)(i % 256);
     }
   }
 }

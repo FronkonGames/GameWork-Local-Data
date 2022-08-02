@@ -30,21 +30,21 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
     public MD5Integrity(int bufferSize)
     {
-      Foundation.Check.Greater(bufferSize, 1024);
+      Foundation.Check.Greater(bufferSize, 1);
 
-      buffer = new byte[bufferSize];
+      buffer = new byte[bufferSize * 1024];
     }
 
     public async Task<string> Calculate(MemoryStream stream, Action<float> progress = null)
     {
       int bytesRead, bytesReadTotal = 0;
 
-      stream.Seek(0, SeekOrigin.Begin);
+      stream.Position = 0;
       
       using MD5 md5 = MD5.Create();
       do
       {
-        bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+        bytesRead = await stream.ReadAsync(buffer);
         if (bytesRead > 0)
           md5.TransformBlock(buffer, 0, bytesRead, null, 0);
 
@@ -53,8 +53,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
       } while (bytesRead > 0);
 
       md5.TransformFinalBlock(buffer, 0, 0);
-      
-      stream.Seek(0, SeekOrigin.Begin);
+
+      stream.Position = 0;
 
       return BitConverter.ToString(md5.Hash).Replace("-", "").ToUpperInvariant();
     }

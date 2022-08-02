@@ -265,7 +265,7 @@ MonoBehaviour:
   fileIntegrity: 0
   fileCompression: 0
   compressionLevel: 0
-  fileEncryption: 0
+  fileEncryption: 1
   password: Password
   seed: 1bb6bd0e-37ae-4701-b8aa-f5bf2415
 --- !u!1 &1440672285

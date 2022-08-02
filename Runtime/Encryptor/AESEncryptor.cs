@@ -28,13 +28,18 @@ namespace FronkonGames.GameWork.Modules.LocalData
   /// </summary>
   public sealed class AESEncryptor : IEncryptor
   {
+    private readonly byte[] buffer;
+    
     private readonly byte[] Key;
     private readonly byte[] IV;
 
-    public AESEncryptor(string password, string seed)
+    public AESEncryptor(int bufferSize, string password, string seed)
     {
+      Check.Greater(bufferSize, 1);
       Check.IsNotNullOrEmpty(password);
       Check.IsNotNullOrEmpty(seed);
+
+      buffer = new byte[bufferSize * 1024];
 
       Rfc2898DeriveBytes rfc = new(password, Encoding.ASCII.GetBytes(seed));
       Key = rfc.GetBytes(16);
@@ -45,13 +50,24 @@ namespace FronkonGames.GameWork.Modules.LocalData
     {
       Check.IsNotNull(stream);
 
-      stream.Seek(0, SeekOrigin.Begin);
+      stream.Position = 0;
 
       MemoryStream encryptedStream = new();
       using AesCryptoServiceProvider aesProvider = new();
       await using CryptoStream cryptoStream = new(encryptedStream, aesProvider.CreateEncryptor(Key, IV), CryptoStreamMode.Write);
 
-      await cryptoStream.WriteAsync(stream.ToArray(), 0, (int)stream.Length);
+      int bytesRead;
+      int bytesReadTotal = 0;
+      do
+      {
+        bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+        if (bytesRead > 0)
+          await cryptoStream.WriteAsync(buffer, 0, bytesRead);
+        
+        bytesReadTotal += bytesRead;
+        progress?.Invoke((float)bytesReadTotal / stream.Length);
+      } while (bytesRead > 0);
+
       cryptoStream.FlushFinalBlock();
 
       progress?.Invoke(1.0f);
@@ -63,7 +79,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
     {
       Check.IsNotNull(stream);
 
-      stream.Seek(0, SeekOrigin.Begin);
+      stream.Position = 0;
 
       await using MemoryStream encryptedStream = new(stream.ToArray());
       using AesCryptoServiceProvider aesProvider = new();
