@@ -265,29 +265,9 @@ namespace FronkonGames.GameWork.Modules.LocalData
           if (fileCompression != FileCompression.None) progressSteps++;
           if (fileEncryption != FileEncryption.None)   progressSteps++;
 
-          IIntegrity integrity = fileIntegrity switch
-          {
-            FileIntegrity.None => new NullIntegrity(),
-            FileIntegrity.MD5  => new MD5Integrity(bufferSize),
-            _ => null
-          };
-          Check.IsNotNull(integrity);
-
-          ICompressor compressor = fileCompression switch
-          {
-            FileCompression.None   => new NullCompressor(),
-            FileCompression.GZip   => new GZipCompressor(bufferSize, compressionLevel),
-            _ => null
-          };
-          Check.IsNotNull(compressor);
-      
-          IEncryptor encryptor = fileEncryption switch
-          {
-            FileEncryption.None => new NullEncryptor(),
-            FileEncryption.AES  => new AESEncryptor(bufferSize, password, seed),
-            _ => null
-          };
-          Check.IsNotNull(encryptor);
+          IIntegrity integrity = CreateFileIntegrity(fileIntegrity);
+          ICompressor compressor = CreateFileCompressor(fileCompression);
+          IEncryptor encryptor = CreateFileEncryptor(fileEncryption);
 
 #if ENABLE_PROFILING
           using (Profiling.Time($"Serializing {file}"))
@@ -421,29 +401,9 @@ namespace FronkonGames.GameWork.Modules.LocalData
           if (fileCompression != FileCompression.None) steps++;
           if (fileEncryption != FileEncryption.None)   steps++;
 
-          IIntegrity integrity = fileIntegrity switch
-          {
-            FileIntegrity.None => new NullIntegrity(),
-            FileIntegrity.MD5  => new MD5Integrity(bufferSize),
-            _ => null
-          };
-          Check.IsNotNull(integrity);
-
-          ICompressor compressor = fileCompression switch
-          {
-            FileCompression.None   => new NullCompressor(),
-            FileCompression.GZip   => new GZipCompressor(bufferSize, compressionLevel),
-            _ => null
-          };
-          Check.IsNotNull(compressor);
-      
-          IEncryptor encryptor = fileEncryption switch
-          {
-            FileEncryption.None => new NullEncryptor(),
-            FileEncryption.AES  => new AESEncryptor(bufferSize, password, seed),
-            _ => null
-          };
-          Check.IsNotNull(encryptor);
+          IIntegrity integrity = CreateFileIntegrity(fileIntegrity);
+          ICompressor compressor = CreateFileCompressor(fileCompression);
+          IEncryptor encryptor = CreateFileEncryptor(fileEncryption);
 
 #if ENABLE_PROFILING
           using (Profiling.Time($"Reading {file} data"))
@@ -547,6 +507,46 @@ namespace FronkonGames.GameWork.Modules.LocalData
       }
       else
         Log.Warning($"File '{file}' not found");
+    }
+
+    private IIntegrity CreateFileIntegrity(FileIntegrity fileIntegrity)
+    {
+      IIntegrity integrity = fileIntegrity switch
+      {
+        FileIntegrity.None => new NullIntegrity(),
+        FileIntegrity.MD5  => new MD5Integrity(bufferSize),
+        _ => null
+      };
+      Check.IsNotNull(integrity);
+
+      return integrity;
+    }
+
+    private ICompressor CreateFileCompressor(FileCompression fileCompression)
+    {
+      ICompressor compressor = fileCompression switch
+      {
+        FileCompression.None   => new NullCompressor(),
+        FileCompression.GZip   => new GZipCompressor(bufferSize, compressionLevel),
+        _ => null
+      };
+      Check.IsNotNull(compressor);
+
+      return compressor;
+    }
+
+    private IEncryptor CreateFileEncryptor(FileEncryption fileEncryption)
+    {
+      IEncryptor encryptor = fileEncryption switch
+      {
+        FileEncryption.None => new NullEncryptor(),
+        FileEncryption.AES  => new AESEncryptor(bufferSize, password, seed),
+        FileEncryption.DES  => new DESEncryptor(bufferSize, password),
+        _ => null
+      };
+      Check.IsNotNull(encryptor);
+
+      return encryptor;
     }
 
     private void CalculateProgress(float progress)

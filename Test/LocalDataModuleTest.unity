@@ -263,7 +263,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bufferSize: 32
   fileIntegrity: 0
-  fileCompression: 0
+  fileCompression: 1
   compressionLevel: 0
   fileEncryption: 1
   password: Password

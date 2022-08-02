@@ -26,24 +26,20 @@ namespace FronkonGames.GameWork.Modules.LocalData
   /// <summary>
   /// .
   /// </summary>
-  public sealed class AESEncryptor : IEncryptor
+  public sealed class DESEncryptor : IEncryptor
   {
     private readonly byte[] buffer;
     
     private readonly byte[] Key;
-    private readonly byte[] IV;
 
-    public AESEncryptor(int bufferSize, string password, string seed)
+    public DESEncryptor(int bufferSize, string password)
     {
       Check.Greater(bufferSize, 1);
       Check.IsNotNullOrEmpty(password);
-      Check.IsNotNullOrEmpty(seed);
 
       buffer = new byte[bufferSize * 1024];
 
-      Rfc2898DeriveBytes rfc = new(password, Encoding.ASCII.GetBytes(seed));
-      Key = rfc.GetBytes(16);
-      IV = rfc.GetBytes(16);
+      Key = Encoding.ASCII.GetBytes(password);
     }
     
     public async Task<MemoryStream> Encrypt(MemoryStream stream, Action<float> progress = null)
@@ -53,8 +49,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
       stream.Position = 0;
 
       MemoryStream encryptedStream = new();
-      using AesCryptoServiceProvider aesProvider = new();
-      await using CryptoStream cryptoStream = new(encryptedStream, aesProvider.CreateEncryptor(Key, IV), CryptoStreamMode.Write);
+      using DESCryptoServiceProvider desProvider = new();
+      await using CryptoStream cryptoStream = new(encryptedStream, desProvider.CreateEncryptor(Key, Key), CryptoStreamMode.Write);
 
       int bytesRead;
       int bytesReadTotal = 0;
@@ -83,8 +79,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
       MemoryStream decryptedStream = new();
       await using MemoryStream encryptedStream = new(stream.ToArray());
-      using AesCryptoServiceProvider aesProvider = new();
-      await using CryptoStream cryptoStream = new(encryptedStream, aesProvider.CreateDecryptor(Key, IV), CryptoStreamMode.Read);
+      using DESCryptoServiceProvider desProvider = new();
+      await using CryptoStream cryptoStream = new(encryptedStream, desProvider.CreateDecryptor(Key, Key), CryptoStreamMode.Read);
 
       int bytesRead;
       int bytesReadTotal = 0;

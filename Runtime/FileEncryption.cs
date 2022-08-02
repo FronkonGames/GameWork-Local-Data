@@ -24,5 +24,6 @@ namespace FronkonGames.GameWork.Modules.LocalData
   {
     None,
     AES,
+    DES,
   }
 }
