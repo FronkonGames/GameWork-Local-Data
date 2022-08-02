@@ -25,13 +25,13 @@ namespace FronkonGames.GameWork.Modules.LocalData
   /// <summary>
   /// .
   /// </summary>
-  public sealed class GZipCompressor : ICompressor
+  public sealed class ZipCompressor : ICompressor
   {
     private readonly byte[] buffer;
     
     private readonly CompressionLevel compressionLevel;
 
-    public GZipCompressor(int bufferSize, CompressionLevel compressionLevel)
+    public ZipCompressor(int bufferSize, CompressionLevel compressionLevel)
     {
       Check.Greater(bufferSize, 1);
 
@@ -48,18 +48,18 @@ namespace FronkonGames.GameWork.Modules.LocalData
       stream.Position = 0;
 
       MemoryStream compressedStream = new();
-      await using GZipStream gzipStream = new(compressedStream, compressionLevel, true);
+      await using DeflateStream deflateStream = new(compressedStream, compressionLevel, true);
       do
       {
         bytesRead = await stream.ReadAsync(buffer);
         if (bytesRead > 0)
-          await gzipStream.WriteAsync(buffer);
+          await deflateStream.WriteAsync(buffer);
 
         bytesReadTotal += bytesRead;
         progress?.Invoke((float)bytesReadTotal / stream.Length);
       } while (bytesRead > 0);
       
-      //stream.Close();
+      stream.Close();
       compressedStream.Position = 0;
 
       return compressedStream;
@@ -74,10 +74,10 @@ namespace FronkonGames.GameWork.Modules.LocalData
       stream.Position = 0;
 
       MemoryStream uncompressedStream = new(originalSize);
-      await using GZipStream gzipStream = new(stream, CompressionMode.Decompress, true);
+      await using DeflateStream deflateStream = new(stream, CompressionMode.Decompress, true);
       do
       {
-        bytesRead = await gzipStream.ReadAsync(buffer, 0, buffer.Length);
+        bytesRead = await deflateStream.ReadAsync(buffer, 0, buffer.Length);
         if (bytesRead > 0)
           await uncompressedStream.WriteAsync(buffer, 0, buffer.Length);
 
@@ -85,7 +85,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
         progress?.Invoke((float)bytesReadTotal / stream.Length);
       } while (bytesRead > 0);
 
-      //stream.Close();
+      stream.Close();
       uncompressedStream.Position = 0;
 
       return uncompressedStream;

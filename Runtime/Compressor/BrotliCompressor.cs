@@ -25,17 +25,17 @@ namespace FronkonGames.GameWork.Modules.LocalData
   /// <summary>
   /// .
   /// </summary>
-  public sealed class GZipCompressor : ICompressor
+  public sealed class BrotliCompressor : ICompressor
   {
     private readonly byte[] buffer;
     
     private readonly CompressionLevel compressionLevel;
 
-    public GZipCompressor(int bufferSize, CompressionLevel compressionLevel)
+    public BrotliCompressor(int bufferSize, CompressionLevel compressionLevel)
     {
       Check.Greater(bufferSize, 1);
 
-      buffer = new byte[bufferSize * 1024];
+      buffer = new byte[bufferSize * 1024 * 1024];
 
       this.compressionLevel = compressionLevel;
     }
@@ -48,18 +48,18 @@ namespace FronkonGames.GameWork.Modules.LocalData
       stream.Position = 0;
 
       MemoryStream compressedStream = new();
-      await using GZipStream gzipStream = new(compressedStream, compressionLevel, true);
+      await using BrotliStream brotliStream = new(compressedStream, compressionLevel, true);
       do
       {
         bytesRead = await stream.ReadAsync(buffer);
         if (bytesRead > 0)
-          await gzipStream.WriteAsync(buffer);
+          await brotliStream.WriteAsync(buffer);
 
         bytesReadTotal += bytesRead;
         progress?.Invoke((float)bytesReadTotal / stream.Length);
       } while (bytesRead > 0);
       
-      //stream.Close();
+      stream.Close();
       compressedStream.Position = 0;
 
       return compressedStream;
@@ -74,10 +74,10 @@ namespace FronkonGames.GameWork.Modules.LocalData
       stream.Position = 0;
 
       MemoryStream uncompressedStream = new(originalSize);
-      await using GZipStream gzipStream = new(stream, CompressionMode.Decompress, true);
+      await using BrotliStream brotliStream = new(stream, CompressionMode.Decompress, true);
       do
       {
-        bytesRead = await gzipStream.ReadAsync(buffer, 0, buffer.Length);
+        bytesRead = await brotliStream.ReadAsync(buffer, 0, buffer.Length);
         if (bytesRead > 0)
           await uncompressedStream.WriteAsync(buffer, 0, buffer.Length);
 
@@ -85,7 +85,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
         progress?.Invoke((float)bytesReadTotal / stream.Length);
       } while (bytesRead > 0);
 
-      //stream.Close();
+      stream.Close();
       uncompressedStream.Position = 0;
 
       return uncompressedStream;

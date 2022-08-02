@@ -51,20 +51,20 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
     [Title("Integrity")]
 
-    [SerializeField, Label("Algorithm"), Indent, OnlyEnableInEdit]
+    [SerializeField, Label("Algorithm"), Indent]
     private FileIntegrity fileIntegrity = FileIntegrity.None;
 
     [Title("Compression")]
 
-    [SerializeField, Label("Type"), Indent, OnlyEnableInEdit]
+    [SerializeField, Label("Type"), Indent]
     private FileCompression fileCompression = FileCompression.None;
 
-    [SerializeField, Label("Level"), Indent, OnlyEnableInEdit]
+    [SerializeField, Label("Level"), Indent]
     private CompressionLevel compressionLevel = CompressionLevel.Fastest;
 
     [Title("Encryption")]
 
-    [SerializeField, Label("Algorithm"), Indent, OnlyEnableInEdit]
+    [SerializeField, Label("Algorithm"), Indent]
     private FileEncryption fileEncryption = FileEncryption.None;
 
     [SerializeField, Indent, Password, OnlyEnableInEdit]
@@ -527,7 +527,9 @@ namespace FronkonGames.GameWork.Modules.LocalData
       ICompressor compressor = fileCompression switch
       {
         FileCompression.None   => new NullCompressor(),
+        FileCompression.Zip    => new ZipCompressor(bufferSize, compressionLevel),
         FileCompression.GZip   => new GZipCompressor(bufferSize, compressionLevel),
+        FileCompression.Brotli => new BrotliCompressor(bufferSize, compressionLevel),
         _ => null
       };
       Check.IsNotNull(compressor);
