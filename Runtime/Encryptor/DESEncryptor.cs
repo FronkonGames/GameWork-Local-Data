@@ -24,22 +24,20 @@ namespace FronkonGames.GameWork.Modules.LocalData
   /// </summary>
   public sealed class DESEncryptor : EncryptorBase
   {
-    public DESEncryptor(int bufferSize, string password) : base(bufferSize, password, password)
-    {
-    }
+    public DESEncryptor(int bufferSize, string password) : base(bufferSize, password) { }
     
-    protected override ICryptoTransform CreateEncryptor(string password, string seed)
+    protected override ICryptoTransform CreateEncryptor()
     {
-      byte[] key = Encoding.ASCII.GetBytes(password);
+      byte[] key = Encoding.UTF8.GetBytes(password);
       
       DESCryptoServiceProvider desProvider = new();
 
       return desProvider.CreateEncryptor(key, key);
     }
 
-    protected override ICryptoTransform CreateDecryptor(string password, string seed)
+    protected override ICryptoTransform CreateDecryptor()
     {
-      byte[] key = Encoding.ASCII.GetBytes(password);
+      byte[] key = Encoding.UTF8.GetBytes(password);
       
       DESCryptoServiceProvider desProvider = new();
 

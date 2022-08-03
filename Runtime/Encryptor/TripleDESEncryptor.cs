@@ -14,18 +14,46 @@
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+using System.Security.Cryptography;
+using System.Text;
 
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
   /// .
   /// </summary>
-  public enum FileEncryption
+  public sealed class TripleDESEncryptor : EncryptorBase
   {
-    None,
-    AES,
-    RC2,
-    DES,
-    TripleDES,
+    public TripleDESEncryptor(int bufferSize, string password, string seed) : base(bufferSize, password, seed) { }
+    
+    protected override ICryptoTransform CreateEncryptor()
+    {
+      MD5CryptoServiceProvider md5CryptoServiceProvider = new();
+      byte[] key = md5CryptoServiceProvider.ComputeHash(Encoding.UTF8.GetBytes(password));
+
+      TripleDESCryptoServiceProvider tripleDESProvider = new()
+      {
+        Key = key,
+        Mode = CipherMode.ECB,
+        Padding = PaddingMode.PKCS7
+      };
+
+      return tripleDESProvider.CreateEncryptor();
+    }
+
+    protected override ICryptoTransform CreateDecryptor()
+    {
+      MD5CryptoServiceProvider md5CryptoServiceProvider = new();
+      byte[] key = md5CryptoServiceProvider.ComputeHash(Encoding.UTF8.GetBytes(password));
+      
+      TripleDESCryptoServiceProvider tripleDESProvider = new()
+      {
+        Key = key,
+        Mode = CipherMode.ECB,
+        Padding = PaddingMode.PKCS7
+      };
+
+      return tripleDESProvider.CreateDecryptor();
+    }
   }
 }

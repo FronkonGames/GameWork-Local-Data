@@ -14,18 +14,35 @@
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+using System.ComponentModel;
+using System.Text;
+using System.Security.Cryptography;
 
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
   /// .
   /// </summary>
-  public enum FileEncryption
+  public sealed class RC2Encryptor : EncryptorBase
   {
-    None,
-    AES,
-    RC2,
-    DES,
-    TripleDES,
+    public RC2Encryptor(int bufferSize, string password) : base(bufferSize, password) { }
+    
+    protected override ICryptoTransform CreateEncryptor()
+    {
+      byte[] key = Encoding.ASCII.GetBytes(password);
+      
+      RC2CryptoServiceProvider rc2Provider = new();
+
+      return rc2Provider.CreateEncryptor(key, key);
+    }
+
+    protected override ICryptoTransform CreateDecryptor()
+    {
+      byte[] key = Encoding.ASCII.GetBytes(password);
+      
+      RC2CryptoServiceProvider rc2Provider = new();
+
+      return rc2Provider.CreateDecryptor(key, key);
+    }
   }
 }

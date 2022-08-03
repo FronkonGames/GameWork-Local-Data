@@ -24,11 +24,9 @@ namespace FronkonGames.GameWork.Modules.LocalData
   /// </summary>
   public sealed class AESEncryptor : EncryptorBase
   {
-    public AESEncryptor(int bufferSize, string password, string seed) : base(bufferSize, password, seed)
-    {
-    }
+    public AESEncryptor(int bufferSize, string password, string seed) : base(bufferSize, password, seed) { }
     
-    protected override ICryptoTransform CreateEncryptor(string password, string seed)
+    protected override ICryptoTransform CreateEncryptor()
     {
       Rfc2898DeriveBytes rfc = new(password, Encoding.ASCII.GetBytes(seed));
       byte[] key = rfc.GetBytes(16);
@@ -39,7 +37,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
       return aesProvider.CreateEncryptor(key, iv);
     }
 
-    protected override ICryptoTransform CreateDecryptor(string password, string seed)
+    protected override ICryptoTransform CreateDecryptor()
     {
       Rfc2898DeriveBytes rfc = new(password, Encoding.ASCII.GetBytes(seed));
       byte[] key = rfc.GetBytes(16);

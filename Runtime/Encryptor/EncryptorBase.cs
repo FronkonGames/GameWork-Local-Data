@@ -27,26 +27,27 @@ namespace FronkonGames.GameWork.Modules.LocalData
   /// </summary>
   public abstract class EncryptorBase : IEncryptor
   {
-    private readonly string password;   // @TODO: Use SafeString.
-    private readonly string seed;       // @TODO: Use SafeString.
     private readonly byte[] buffer;
 
     protected ICryptoTransform cryptoTransform;
+    protected readonly string password;   // @TODO: Use SafeString.
+    protected readonly string seed;       // @TODO: Use SafeString.
 
-    protected EncryptorBase(int bufferSize, string password, string seed)
+    public EncryptorBase(int bufferSize, string password, string seed = default)
     {
       Check.Greater(bufferSize, 1);
       Check.IsNotNullOrEmpty(password);
-      Check.IsNotNullOrEmpty(seed);
 
       this.password = password;
       this.seed = seed;
       buffer = new byte[bufferSize * 1024];
     }
 
-    protected abstract ICryptoTransform CreateEncryptor(string password, string seed);
+    public EncryptorBase() => throw new NotImplementedException();
 
-    protected abstract ICryptoTransform CreateDecryptor(string password, string seed);
+    protected abstract ICryptoTransform CreateEncryptor();
+
+    protected abstract ICryptoTransform CreateDecryptor();
 
     public async Task<MemoryStream> Encrypt(MemoryStream stream, Action<float> progress = null)
     {
@@ -55,7 +56,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
       stream.Position = 0;
 
       MemoryStream encryptedStream = new();
-      await using CryptoStream cryptoStream = new(encryptedStream, CreateEncryptor(password, seed), CryptoStreamMode.Write);
+      await using CryptoStream cryptoStream = new(encryptedStream, CreateEncryptor(), CryptoStreamMode.Write);
 
       int bytesRead;
       int bytesReadTotal = 0;
@@ -85,7 +86,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
       MemoryStream decryptedStream = new();
       await using MemoryStream encryptedStream = new(stream.ToArray());
       using AesCryptoServiceProvider aesProvider = new();
-      await using CryptoStream cryptoStream = new(encryptedStream, CreateDecryptor(password, seed), CryptoStreamMode.Read);
+      await using CryptoStream cryptoStream = new(encryptedStream, CreateDecryptor(), CryptoStreamMode.Read);
 
       int bytesRead;
       int bytesReadTotal = 0;

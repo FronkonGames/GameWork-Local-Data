@@ -555,9 +555,11 @@ namespace FronkonGames.GameWork.Modules.LocalData
     {
       IEncryptor encryptor = fileEncryption switch
       {
-        FileEncryption.None => new NullEncryptor(),
-        FileEncryption.AES  => new AESEncryptor(bufferSize, password, seed),
-        FileEncryption.DES  => new DESEncryptor(bufferSize, password),
+        FileEncryption.None       => new NullEncryptor(),
+        FileEncryption.AES        => new AESEncryptor(bufferSize, password, seed),
+        FileEncryption.RC2        => new RC2Encryptor(bufferSize, password),
+        FileEncryption.DES        => new DESEncryptor(bufferSize, password),
+        FileEncryption.TripleDES  => new TripleDESEncryptor(bufferSize, password, seed),
         _ => null
       };
       Check.IsNotNull(encryptor);
