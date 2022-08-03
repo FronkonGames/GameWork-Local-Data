@@ -43,8 +43,6 @@ namespace FronkonGames.GameWork.Modules.LocalData
       buffer = new byte[bufferSize * 1024];
     }
 
-    public EncryptorBase() => throw new NotImplementedException();
-
     protected abstract ICryptoTransform CreateEncryptor();
 
     protected abstract ICryptoTransform CreateDecryptor();
@@ -56,7 +54,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
       stream.Position = 0;
 
       MemoryStream encryptedStream = new();
-      await using CryptoStream cryptoStream = new(encryptedStream, CreateEncryptor(), CryptoStreamMode.Write);
+      CryptoStream cryptoStream = new(encryptedStream, CreateEncryptor(), CryptoStreamMode.Write);
 
       int bytesRead;
       int bytesReadTotal = 0;

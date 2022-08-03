@@ -1,8 +1,8 @@
 {
   "name": "com.frokongames.gamework.modules.localdata",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "displayName": "Game:Work Local Data",
-  "decription": "Local data module.",
+  "decription": "Async load/save local data with compression, encryption and integrity check.",
   "references": [ ],
   "unity": "2020.3",
   "unityRelease": "26f1",
@@ -15,7 +15,7 @@
   "autoReferenced": true,
   "defineConstraints": [],
   "dependencies":  {  },
-  "keywords": [ "unity", "gamedev", "framework", "game development", "gamework", "module" ],
+  "keywords": [ "unity", "gamedev", "framework", "game development", "gamework", "module", "save", "async", "compression", "emcryption", "integrity", "zip", "AES" ],
   "category": "Unity",
   "repository":
   {

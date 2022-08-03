@@ -52,7 +52,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
     [Title("Streams")]
 
-    [SerializeField, Label("Buffer size (KB)"), Indent, Range(1, 256), OnlyEnableInEdit]
+    [SerializeField, Label("Buffer size (KB)"), Indent, Range(1, 256)]
     private int bufferSize = 32;
 
     [Title("Integrity")]
@@ -93,8 +93,6 @@ namespace FronkonGames.GameWork.Modules.LocalData
       cancellationSource = null;
 
       Path = ComposePath();
-      
-      Log.Info($"Using path '{Path}'");
     }
 
     /// <summary>
@@ -190,21 +188,21 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// </summary>
     /// <param name="file"></param>
     /// <returns></returns>
-    public string NextAvailableName(string file)
+    public string NextAvailableName(string file, string separator = "")
     {
       string availableName = file;
 
       int index = 0;
       try
       {
-        string name = System.IO.Path.GetFileNameWithoutExtension(file);
-        string extension = System.IO.Path.GetExtension(file);
-
-        do
+        while (Exists(availableName) == true && index < 1000)
         {
-          availableName = $"{name}{index:000}{extension}"; 
+          string name = System.IO.Path.GetFileNameWithoutExtension(file);
+          string extension = System.IO.Path.GetExtension(file);
+          
+          availableName = $"{name}{separator}{index:000}{extension}"; 
           index++;
-        } while (Exists(availableName) == true && index < 1000);
+        }
       }
       catch (Exception e)
       {
@@ -284,19 +282,6 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
           int uncompressedSize = (int)stream.Length;
 
-          string hash = string.Empty;
-#if ENABLE_PROFILING
-          using (Profiling.Time($"Calculating {file} integrity"))
-#endif
-          {
-            hash = await integrity.Calculate(stream, CalculateProgress);
-          }
-
-          writer.Write(hash);
-
-          if (fileIntegrity != FileIntegrity.None)
-            currentProgress += 1.0f / progressSteps;
-          
 #if ENABLE_PROFILING
           using (Profiling.Time($"Compressing {file} using {fileCompression}"))
 #endif
@@ -315,6 +300,19 @@ namespace FronkonGames.GameWork.Modules.LocalData
           }
 
           if (fileEncryption != FileEncryption.None)
+            currentProgress += 1.0f / progressSteps;
+
+          string hash = string.Empty;
+#if ENABLE_PROFILING
+          using (Profiling.Time($"Calculating {file} integrity"))
+#endif
+          {
+            hash = await integrity.Calculate(stream, CalculateProgress);
+          }
+
+          writer.Write(hash);
+
+          if (fileIntegrity != FileIntegrity.None)
             currentProgress += 1.0f / progressSteps;
           
           writer.Write(uncompressedSize);
@@ -426,26 +424,6 @@ namespace FronkonGames.GameWork.Modules.LocalData
           }
           
 #if ENABLE_PROFILING
-          using (Profiling.Time($"Decrypting {file}"))
-#endif
-          {
-            stream = await encryptor.Decrypt(stream, CalculateProgress);
-          }
-
-          if (fileEncryption != FileEncryption.None)
-            currentProgress += 1.0f / progressSteps;
-          
-#if ENABLE_PROFILING
-          using (Profiling.Time($"Decompressing {file}"))
-#endif
-          {
-            stream = await compressor.Decompress(stream, uncompressedSize, CalculateProgress);
-          }
-
-          if (fileCompression != FileCompression.None)
-            currentProgress += 1.0f / progressSteps;
-          
-#if ENABLE_PROFILING
           using (Profiling.Time($"Checking {file} integrity"))
 #endif
           {
@@ -458,11 +436,30 @@ namespace FronkonGames.GameWork.Modules.LocalData
           if (result == FileResult.Ok)
           {
 #if ENABLE_PROFILING
+            using (Profiling.Time($"Decrypting {file}"))
+#endif
+            {
+              stream = await encryptor.Decrypt(stream, CalculateProgress);
+            }
+
+            if (fileEncryption != FileEncryption.None)
+              currentProgress += 1.0f / progressSteps;
+          
+#if ENABLE_PROFILING
+            using (Profiling.Time($"Decompressing {file}"))
+#endif
+            {
+              stream = await compressor.Decompress(stream, uncompressedSize, CalculateProgress);
+            }
+
+            if (fileCompression != FileCompression.None)
+              currentProgress += 1.0f / progressSteps;
+            
+#if ENABLE_PROFILING
             using (Profiling.Time($"Deserializing {file}"))
 #endif
             {
               BinaryFormatter binaryFormatter = new();
-              stream.Position = 0;
               data = binaryFormatter.Deserialize(stream) as T;
             }
 

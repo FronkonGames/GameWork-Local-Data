@@ -83,6 +83,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
     private int kilobytes = 10;
     private int megabytes = 0;
+    private float randomness = 0.5f;
 
     private List<FileInfo> files = new List<FileInfo>();
     private int fileSelected = -1;
@@ -137,10 +138,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
                   
                   GUILayout.BeginHorizontal();
                   {
-                    string fileLabel = $"'{files[i].Name}'";
-                    fileLabel += $" {((int)files[i].Length).BytesToHumanReadable()}";
-
-                    if (GUILayout.Button(fileLabel, FontStyle) == true)
+                    if (GUILayout.Button(files[i].Name, FontStyle) == true)
                     {
                       fileSelected = i;
                       testData = null;
@@ -149,6 +147,10 @@ namespace FronkonGames.GameWork.Modules.LocalData
                         progress => statusLabel = $"READING {(progress * 100.0f):00}%",
                         (result, file) => { statusLabel = "NO ACTIVE FILE OPERATIONS"; testData = file; });
                     }
+                    
+                    GUILayout.FlexibleSpace();
+                    
+                    GUILayout.Label($"{((int)files[i].Length).BytesToHumanReadable()}");
                   }
                   GUILayout.EndHorizontal();
                 }
@@ -225,38 +227,50 @@ namespace FronkonGames.GameWork.Modules.LocalData
                   megabytes = (int)GUILayout.HorizontalSlider(megabytes, 0.0f, 98, GUILayout.ExpandWidth(true));
                 }
                 GUILayout.EndHorizontal();
+                
+                GUILayout.BeginHorizontal();
+                {
+                  GUILayout.Label("Sequential", GUILayout.Width(60.0f));
+                  randomness = GUILayout.HorizontalSlider(randomness, 0.0f, 1.0f, GUILayout.ExpandWidth(true));
+                  GUILayout.Label("Random", GUILayout.Width(50.0f));
+                }
+                GUILayout.EndHorizontal();
               }
               GUILayout.EndVertical();
 
               GUILayout.Space(margin);
 
-              if (GUILayout.Button($"CREATE {(megabytes * 1024 * 1024 + kilobytes * 1024).BytesToHumanReadable()} FILE", ButtonStyle) == true)
+              GUILayout.BeginHorizontal();
               {
-                localData.CancelAsyncOperations();
-                localData.Write(new TestData(megabytes * 1024 * 1024 + kilobytes * 1024),
-                  localData.NextAvailableName($"{Integrity}_{Compression}_{Encryption}_.data"),
-                  progress => statusLabel = $"WRITING {(progress * 100.0f):00}%",
-                  (result, file) => { files = localData.GetFilesInfo(); statusLabel = "NO ACTIVE FILE OPERATIONS"; });
-              }
+                if (GUILayout.Button($"CREATE {(megabytes * 1024 * 1024 + kilobytes * 1024).BytesToHumanReadable()} FILE", ButtonStyle) == true)
+                {
+                  localData.CancelAsyncOperations();
+                  localData.Write(new TestData(megabytes * 1024 * 1024 + kilobytes * 1024, randomness),
+                    localData.NextAvailableName($"{Integrity}_{Compression}_{Encryption}.data", "_"),
+                    progress => statusLabel = $"WRITING {(progress * 100.0f):00}%",
+                    (result, file) => { files = localData.GetFilesInfo(); statusLabel = "NO ACTIVE FILE OPERATIONS"; });
+                }
               
-              GUILayout.Space(margin);
+                GUILayout.Space(margin);
+                
+                GUI.enabled = fileSelected != -1 && localData.Busy == false;
+                
+                if (GUILayout.Button("DELETE", ButtonStyle) == true && fileSelected < files.Count)
+                {
+                  localData.CancelAsyncOperations();
+                  localData.Delete(files[fileSelected].Name);
+                  fileSelected = -1;
+              
+                  files = localData.GetFilesInfo();
+                }
 
-              GUI.enabled = fileSelected != -1 && localData.Busy == false;
-            
-              if (GUILayout.Button("DELETE", ButtonStyle) == true && fileSelected < files.Count)
-              {
-                localData.CancelAsyncOperations();
-                localData.Delete(files[fileSelected].Name);
-                fileSelected = -1;
+                GUI.enabled = localData.Busy;
               
-                files = localData.GetFilesInfo();
+                if (GUILayout.Button(localData.Busy ? "<color=red>CANCEL</color>" : "CANCEL", ButtonStyle) == true)
+                {
+                }
               }
-
-              GUI.enabled = localData.Busy;
-              
-              if (GUILayout.Button(localData.Busy ? "<color=red>CANCEL</color>" : "CANCEL", ButtonStyle) == true)
-              {
-              }
+              GUILayout.EndHorizontal();
              
               GUI.enabled = true;
             }

@@ -13,8 +13,6 @@
   </a>
 </p>
 
-<p align="center"><b>⚠️Still In Early Development ⚠️<b/></p>
-
 ## 🔧 Requisites
 
 - Unity 2020.3 or higher.

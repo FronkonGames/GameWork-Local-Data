@@ -26,7 +26,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
   {
     public ZipCompressor(int bufferSize, CompressionLevel compressionLevel) : base(bufferSize, compressionLevel) { }
 
-    protected override Stream CreateCompressorStream() => new DeflateStream(memoryStream, compressionLevel, true);
+    protected override Stream CreateCompressorStream(MemoryStream stream) => new DeflateStream(stream, compressionLevel, true);
     
     protected override Stream CreateDecompressorStream(MemoryStream stream) => new DeflateStream(stream, CompressionMode.Decompress, true);
   }

@@ -30,15 +30,21 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
     public byte[] data;
 
-    public TestData(int size)
+    public TestData(int size, float randomness = 0.5f)
     {
       Check.Greater(size, 0);
 
       message = "All your base are belong to us!";
 
       data = new byte[size];
+      bool random = false;
       for (int i = 0; i < size; ++i)
-        data[i] = (byte)(i % 256);
+      {
+        data[i] = random ? (byte)Random.Range(0, 255) : (byte)(i % 256);
+
+        if (i % 1024 == 0)
+          random = Random.value < randomness;
+      }
     }
   }
 }

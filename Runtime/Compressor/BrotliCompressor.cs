@@ -26,7 +26,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
   {
     public BrotliCompressor(int bufferSize, CompressionLevel compressionLevel) : base(bufferSize, compressionLevel) { }
 
-    protected override Stream CreateCompressorStream() => new BrotliStream(memoryStream, compressionLevel, true);
+    protected override Stream CreateCompressorStream(MemoryStream stream) => new BrotliStream(stream, compressionLevel, true);
     
     protected override Stream CreateDecompressorStream(MemoryStream stream) => new BrotliStream(stream, CompressionMode.Decompress, true);
   }
