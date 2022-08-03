@@ -14,59 +14,17 @@
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-using System;
-using System.IO;
 using System.Security.Cryptography;
-using System.Threading.Tasks;
-using FronkonGames.GameWork.Foundation;
-using UnityEngine;
 
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
   /// .
   /// </summary>
-  public sealed class MD5Integrity : IIntegrity
+  public sealed class MD5Integrity : IntegrityBase
   {
-    private readonly byte[] buffer;
-
-    public MD5Integrity(int bufferSize)
-    {
-      Foundation.Check.Greater(bufferSize, 1);
-
-      buffer = new byte[bufferSize * 1024];
-    }
-
-    public async Task<string> Calculate(MemoryStream stream, Action<float> progress = null)
-    {
-      stream.Position = 0;
-      
-      int bytesRead, bytesReadTotal = 0;
-      using MD5 md5 = MD5.Create();
-      do
-      {
-        bytesRead = await stream.ReadAsync(buffer, 0 , buffer.Length);
-        if (bytesRead > 0)
-          md5.TransformBlock(buffer, 0, bytesRead, null, 0);
-
-        bytesReadTotal += bytesRead;
-        progress?.Invoke((float)bytesReadTotal / stream.Length);
-      } while (bytesRead > 0);
-
-      md5.TransformFinalBlock(buffer, 0, 0);
-
-      stream.Position = 0;
-
-      return BitConverter.ToString(md5.Hash).Replace("-", "").ToUpperInvariant();
-    }
-
-    public async Task<bool> Check(MemoryStream stream, string hash, Action<float> progress = null)
-    {
-      string streamHash = await Calculate(stream);
-      
-      Log.Info($"Hash file: '{hash}', Hash calculated: '{streamHash}'");
-
-      return streamHash.Equals(hash);
-    }
+    public MD5Integrity(int bufferSize) : base(bufferSize) { }
+    
+    public override HashAlgorithm CreateHashAlgorithm() => MD5.Create();
   }
 }

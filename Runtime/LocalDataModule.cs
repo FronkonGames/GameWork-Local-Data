@@ -527,8 +527,11 @@ namespace FronkonGames.GameWork.Modules.LocalData
     {
       IIntegrity integrity = fileIntegrity switch
       {
-        FileIntegrity.None => new NullIntegrity(),
-        FileIntegrity.MD5  => new MD5Integrity(bufferSize),
+        FileIntegrity.None   => new NullIntegrity(),
+        FileIntegrity.MD5    => new MD5Integrity(bufferSize),
+        FileIntegrity.SHA1   => new SHA1Integrity(bufferSize),
+        FileIntegrity.SHA256 => new SHA256Integrity(bufferSize),
+        FileIntegrity.SHA512 => new SHA512Integrity(bufferSize),
         _ => null
       };
       Check.IsNotNull(integrity);

@@ -14,18 +14,59 @@
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+using System;
+using System.IO;
+using System.Security.Cryptography;
+using System.Threading.Tasks;
+using FronkonGames.GameWork.Foundation;
+using UnityEngine;
 
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
   /// .
   /// </summary>
-  public enum FileIntegrity
+  public abstract class IntegrityBase : IIntegrity
   {
-    None,
-    MD5,
-    SHA1,
-    SHA256,
-    SHA512,
+    private readonly byte[] buffer;
+
+    public IntegrityBase(int bufferSize)
+    {
+      Foundation.Check.Greater(bufferSize, 1);
+
+      buffer = new byte[bufferSize * 1024];
+    }
+
+    public abstract HashAlgorithm CreateHashAlgorithm();
+
+    public async Task<string> Calculate(MemoryStream stream, Action<float> progress = null)
+    {
+      stream.Position = 0;
+      
+      int bytesRead, bytesReadTotal = 0;
+      using HashAlgorithm hashAlgorithm = CreateHashAlgorithm();
+      do
+      {
+        bytesRead = await stream.ReadAsync(buffer, 0 , buffer.Length);
+        if (bytesRead > 0)
+          hashAlgorithm.TransformBlock(buffer, 0, bytesRead, null, 0);
+
+        bytesReadTotal += bytesRead;
+        progress?.Invoke((float)bytesReadTotal / stream.Length);
+      } while (bytesRead > 0);
+
+      hashAlgorithm.TransformFinalBlock(buffer, 0, 0);
+
+      stream.Position = 0;
+
+      return BitConverter.ToString(hashAlgorithm.Hash).Replace("-", "").ToUpperInvariant();
+    }
+
+    public async Task<bool> Check(MemoryStream stream, string hash, Action<float> progress = null)
+    {
+      string streamHash = await Calculate(stream);
+
+      return streamHash.Equals(hash);
+    }
   }
 }

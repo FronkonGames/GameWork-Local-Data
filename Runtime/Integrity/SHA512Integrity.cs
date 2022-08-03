@@ -14,18 +14,17 @@
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+using System.Security.Cryptography;
 
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
   /// .
   /// </summary>
-  public enum FileIntegrity
+  public sealed class SHA512Integrity : IntegrityBase
   {
-    None,
-    MD5,
-    SHA1,
-    SHA256,
-    SHA512,
+    public SHA512Integrity(int bufferSize) : base(bufferSize) { }
+    
+    public override HashAlgorithm CreateHashAlgorithm() => SHA512.Create();
   }
 }
