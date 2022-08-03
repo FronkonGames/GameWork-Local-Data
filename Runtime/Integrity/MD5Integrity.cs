@@ -18,6 +18,8 @@ using System;
 using System.IO;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using FronkonGames.GameWork.Foundation;
+using UnityEngine;
 
 namespace FronkonGames.GameWork.Modules.LocalData
 {
@@ -37,14 +39,13 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
     public async Task<string> Calculate(MemoryStream stream, Action<float> progress = null)
     {
-      int bytesRead, bytesReadTotal = 0;
-
       stream.Position = 0;
       
+      int bytesRead, bytesReadTotal = 0;
       using MD5 md5 = MD5.Create();
       do
       {
-        bytesRead = await stream.ReadAsync(buffer);
+        bytesRead = await stream.ReadAsync(buffer, 0 , buffer.Length);
         if (bytesRead > 0)
           md5.TransformBlock(buffer, 0, bytesRead, null, 0);
 
@@ -62,6 +63,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
     public async Task<bool> Check(MemoryStream stream, string hash, Action<float> progress = null)
     {
       string streamHash = await Calculate(stream);
+      
+      Log.Info($"Hash file: '{hash}', Hash calculated: '{streamHash}'");
 
       return streamHash.Equals(hash);
     }

@@ -35,7 +35,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
     {
       Check.Greater(bufferSize, 1);
 
-      buffer = new byte[bufferSize * 1024 * 1024];
+      buffer = new byte[bufferSize * 1024];
 
       this.compressionLevel = compressionLevel;
     }

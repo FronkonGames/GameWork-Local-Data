@@ -44,6 +44,36 @@ namespace FronkonGames.GameWork.Modules.LocalData
       hover = { background = MakeTex(2, 2, new Color(0.3f, 0.3f, 0.3f, 0.75f)) }
     };
 
+    private FileIntegrity Integrity
+    {
+      get => (FileIntegrity)PlayerPrefs.GetInt("GameWork.LocalData.Test.Integrity", (int)FileIntegrity.None);
+      set
+      {
+        PlayerPrefs.SetInt("GameWork.LocalData.Test.Integrity", (int)value);
+        localData.Integrity = value;
+      }
+    }
+
+    private FileCompression Compression
+    {
+      get => (FileCompression)PlayerPrefs.GetInt("GameWork.LocalData.Test.Compression", (int)FileCompression.None);
+      set
+      {
+        PlayerPrefs.SetInt("GameWork.LocalData.Test.Compression", (int) value);
+        localData.Compression = value;
+      }
+    }
+
+    private FileEncryption Encryption
+    {
+      get => (FileEncryption)PlayerPrefs.GetInt("GameWork.LocalData.Test.Encryption", (int)FileEncryption.None);
+      set
+      {
+        PlayerPrefs.SetInt("GameWork.LocalData.Test.Encryption", (int) value);
+        localData.Encryption = value;
+      }
+    }
+
     private GUIStyle boxStyle;
     private GUIStyle fontStyle;
     private GUIStyle buttonStyle;
@@ -109,8 +139,6 @@ namespace FronkonGames.GameWork.Modules.LocalData
                   {
                     string fileLabel = $"'{files[i].Name}'";
                     fileLabel += $" {((int)files[i].Length).BytesToHumanReadable()}";
-                    fileLabel += $" {files[i].LastWriteTimeUtc.ToShortTimeString()}";
-                    fileLabel += $" {files[i].LastWriteTimeUtc.ToShortDateString()}";
 
                     if (GUILayout.Button(fileLabel, FontStyle) == true)
                     {
@@ -133,7 +161,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
             GUILayout.Space(margin);
 
-            GUILayout.BeginVertical(BoxStyle, GUILayout.Width(Screen.width * 0.33f));
+            GUILayout.BeginVertical(BoxStyle, GUILayout.Width(Screen.width * 0.5f));
             {
               GUILayout.BeginHorizontal();
               {
@@ -154,26 +182,59 @@ namespace FronkonGames.GameWork.Modules.LocalData
                 files = localData.GetFilesInfo();
 
               GUILayout.Space(margin);
-
-              GUILayout.BeginHorizontal();
+              
+              GUILayout.BeginVertical("box");
               {
-                GUILayout.Label("Kilobytes", GUILayout.Width(75.0f));
-                kilobytes = (int)GUILayout.HorizontalSlider(kilobytes, 1.0f, 1024);
-              }
-              GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                {
+                  GUILayout.Label("Integrity", GUILayout.Width(75.0f));
+                  Integrity = (FileIntegrity)GUILayout.SelectionGrid((int)Integrity, Enum.GetNames(typeof(FileIntegrity)), Enum.GetNames(typeof(FileIntegrity)).Length);
+                }
+                GUILayout.EndHorizontal();
 
-              GUILayout.BeginHorizontal();
-              {
-                GUILayout.Label("Megabytes", GUILayout.Width(75.0f));
-                megabytes = (int)GUILayout.HorizontalSlider(megabytes, 0.0f, 98, GUILayout.ExpandWidth(true));
+                GUILayout.BeginHorizontal();
+                {
+                  GUILayout.Label("Compression", GUILayout.Width(75.0f));
+                  Compression = (FileCompression)GUILayout.SelectionGrid((int)Compression, Enum.GetNames(typeof(FileCompression)), Enum.GetNames(typeof(FileCompression)).Length);
+                }
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
+                {
+                  GUILayout.Label("Encryption", GUILayout.Width(75.0f));
+                  Encryption = (FileEncryption)GUILayout.SelectionGrid((int)Encryption, Enum.GetNames(typeof(FileEncryption)), Enum.GetNames(typeof(FileEncryption)).Length);
+                }
+                GUILayout.EndHorizontal();
               }
-              GUILayout.EndHorizontal();
+              GUILayout.EndVertical();
+
+              GUILayout.Space(margin);
+
+              GUILayout.BeginVertical("box");
+              {
+                GUILayout.BeginHorizontal();
+                {
+                  GUILayout.Label("Kilobytes", GUILayout.Width(75.0f));
+                  kilobytes = (int)GUILayout.HorizontalSlider(kilobytes, 1.0f, 1024);
+                }
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
+                {
+                  GUILayout.Label("Megabytes", GUILayout.Width(75.0f));
+                  megabytes = (int)GUILayout.HorizontalSlider(megabytes, 0.0f, 98, GUILayout.ExpandWidth(true));
+                }
+                GUILayout.EndHorizontal();
+              }
+              GUILayout.EndVertical();
+
+              GUILayout.Space(margin);
 
               if (GUILayout.Button($"CREATE {(megabytes * 1024 * 1024 + kilobytes * 1024).BytesToHumanReadable()} FILE", ButtonStyle) == true)
               {
                 localData.CancelAsyncOperations();
                 localData.Write(new TestData(megabytes * 1024 * 1024 + kilobytes * 1024),
-                  localData.NextAvailableName("File_.test"),
+                  localData.NextAvailableName($"{Integrity}_{Compression}_{Encryption}_.data"),
                   progress => statusLabel = $"WRITING {(progress * 100.0f):00}%",
                   (result, file) => { files = localData.GetFilesInfo(); statusLabel = "NO ACTIVE FILE OPERATIONS"; });
               }
@@ -193,7 +254,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
               GUI.enabled = localData.Busy;
               
-              if (GUILayout.Button("CANCEL", ButtonStyle) == true)
+              if (GUILayout.Button(localData.Busy ? "<color=red>CANCEL</color>" : "CANCEL", ButtonStyle) == true)
               {
               }
              
@@ -221,8 +282,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
                 {
                   GUILayout.Label($"Message: {testData.message}");
                   
-                  string hex = BitConverter.ToString(testData.data[..Math.Min(testData.data.Length, 700)]).Replace("-","");
-                  GUILayout.TextArea(testData.data.Length <= 700 ? hex : hex + "...");
+                  string hex = BitConverter.ToString(testData.data[..Math.Min(testData.data.Length, 300)]).Replace("-","");
+                  GUILayout.TextArea(testData.data.Length <= 300 ? hex : hex + "...");
                 }
                 GUILayout.EndVertical();
               }

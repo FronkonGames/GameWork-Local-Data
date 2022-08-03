@@ -42,6 +42,12 @@ namespace FronkonGames.GameWork.Modules.LocalData
     
     public string Path { get; set; }
 
+    public FileIntegrity Integrity { get => fileIntegrity; set => fileIntegrity = value; }
+
+    public FileCompression Compression { get => fileCompression; set => fileCompression = value; }
+
+    public FileEncryption Encryption { get => fileEncryption; set => fileEncryption = value; }
+
     public bool Busy => cancellationSource != null;
 
     [Title("Streams")]
@@ -234,6 +240,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
       MemoryStream stream = new();
       cancellationSource = new();
 
+      clientProgress = onProgress;
+      currentProgress = 0.0f;
       onProgress?.Invoke(0.0f);
 
       try
@@ -250,7 +258,6 @@ namespace FronkonGames.GameWork.Modules.LocalData
           // Encryption        : byte.
           // Hash              : string.
           // Uncompressed size : int.
-          // Version           : int.
           // Data              : byte[].
           
           writer.Write(localData.Signature);
@@ -258,8 +265,6 @@ namespace FronkonGames.GameWork.Modules.LocalData
           writer.Write((byte)fileCompression);
           writer.Write((byte)fileEncryption);
 
-          clientProgress = onProgress;
-          currentProgress = 0.0f;
           progressSteps = 1;
           if (fileIntegrity != FileIntegrity.None)     progressSteps++;
           if (fileCompression != FileCompression.None) progressSteps++;
@@ -313,7 +318,6 @@ namespace FronkonGames.GameWork.Modules.LocalData
             currentProgress += 1.0f / progressSteps;
           
           writer.Write(uncompressedSize);
-          writer.Write(localData.Version);
 
 #if ENABLE_PROFILING
           using (Profiling.Time($"Writing {fileName} data"))
@@ -337,19 +341,19 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
         Log.Warning($"File '{file}' writing canceled.");
       }
-/* 
       catch (Exception e)
       {
         result = FileResult.ExceptionRaised;
 
         Log.Exception(e.ToString());
       }
-*/
       finally
       {
         await stream.DisposeAsync();
 
         cancellationSource = null;
+        clientProgress = null;
+        progressSteps = 1;
 
         onProgress?.Invoke(1.0f);
         
@@ -372,14 +376,16 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
       FileResult result = FileResult.Ok;
       
+      clientProgress = onProgress;
+      currentProgress = 0.0f;
+      onProgress?.Invoke(0.0f);
+      
       T data = null;
       MemoryStream stream = new();
       cancellationSource = new CancellationTokenSource();
 
       try
       {
-        onProgress?.Invoke(0.0f);
-
         FileInfo fileInfo = GetFileInfo(file);
         if (fileInfo != null)
         {
@@ -394,12 +400,11 @@ namespace FronkonGames.GameWork.Modules.LocalData
           FileEncryption fileEncryption = (FileEncryption)binaryReader.ReadByte();
           string hash = binaryReader.ReadString();
           int uncompressedSize = binaryReader.ReadInt32();
-          int version = binaryReader.ReadInt32();
 
-          int steps = 1;
-          if (fileIntegrity != FileIntegrity.None)     steps++;
-          if (fileCompression != FileCompression.None) steps++;
-          if (fileEncryption != FileEncryption.None)   steps++;
+          progressSteps = 1;
+          if (fileIntegrity != FileIntegrity.None)     progressSteps++;
+          if (fileCompression != FileCompression.None) progressSteps++;
+          if (fileEncryption != FileEncryption.None)   progressSteps++;
 
           IIntegrity integrity = CreateFileIntegrity(fileIntegrity);
           ICompressor compressor = CreateFileCompressor(fileCompression);
@@ -421,32 +426,37 @@ namespace FronkonGames.GameWork.Modules.LocalData
           }
           
 #if ENABLE_PROFILING
+          using (Profiling.Time($"Decrypting {file}"))
+#endif
+          {
+            stream = await encryptor.Decrypt(stream, CalculateProgress);
+          }
+
+          if (fileEncryption != FileEncryption.None)
+            currentProgress += 1.0f / progressSteps;
+          
+#if ENABLE_PROFILING
+          using (Profiling.Time($"Decompressing {file}"))
+#endif
+          {
+            stream = await compressor.Decompress(stream, uncompressedSize, CalculateProgress);
+          }
+
+          if (fileCompression != FileCompression.None)
+            currentProgress += 1.0f / progressSteps;
+          
+#if ENABLE_PROFILING
           using (Profiling.Time($"Checking {file} integrity"))
 #endif
           {
-            result = await integrity.Check(stream, hash) ? FileResult.Ok : FileResult.IntegrityFailure;
-
-            onProgress?.Invoke(0.666f);
+            result = await integrity.Check(stream, hash, CalculateProgress) ? FileResult.Ok : FileResult.IntegrityFailure;
           }
 
+          if (fileIntegrity != FileIntegrity.None)
+            currentProgress += 1.0f / progressSteps;
+          
           if (result == FileResult.Ok)
           {
-#if ENABLE_PROFILING
-            using (Profiling.Time($"Decrypting {file}"))
-#endif
-            {
-              stream = await encryptor.Decrypt(stream);
-            
-              onProgress?.Invoke(0.832f);
-            }
-
-#if ENABLE_PROFILING
-            using (Profiling.Time($"Decompressing {file}"))
-#endif
-            {
-              stream = await compressor.Decompress(stream, uncompressedSize);
-            }
-
 #if ENABLE_PROFILING
             using (Profiling.Time($"Deserializing {file}"))
 #endif
@@ -458,9 +468,11 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
             result = data.Signature.Equals(fileSignature) ? FileResult.Ok : FileResult.InvalidSignature;
           }
+          else
+            Log.Warning($"File '{file}' integrity fails");
         }
         else
-          Log.Error($"File {Path}{file} not found");
+          Log.Error($"File '{Path}{file}' not found");
       }
       catch (OperationCanceledException e)
       {
@@ -476,9 +488,11 @@ namespace FronkonGames.GameWork.Modules.LocalData
       }
       finally
       {
-        stream?.Dispose();
+        await stream.DisposeAsync();
         
         cancellationSource = null;
+        clientProgress = null;
+        progressSteps = 1;
 
         onProgress?.Invoke(1.0f);
 

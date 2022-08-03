@@ -25,7 +25,5 @@ namespace FronkonGames.GameWork.Modules.LocalData
   public abstract class LocalData : ILocalData
   {
     public string Signature => "GW";
-
-    public int Version => 1;
   }
 }
