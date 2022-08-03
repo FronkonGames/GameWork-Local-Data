@@ -14,93 +14,40 @@
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-using System;
-using System.IO;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
-using FronkonGames.GameWork.Foundation;
 
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
   /// .
   /// </summary>
-  public sealed class AESEncryptor : IEncryptor
+  public sealed class AESEncryptor : EncryptorBase
   {
-    private readonly byte[] buffer;
-    
-    private readonly byte[] Key;
-    private readonly byte[] IV;
-
-    public AESEncryptor(int bufferSize, string password, string seed)
+    public AESEncryptor(int bufferSize, string password, string seed) : base(bufferSize, password, seed)
     {
-      Check.Greater(bufferSize, 1);
-      Check.IsNotNullOrEmpty(password);
-      Check.IsNotNullOrEmpty(seed);
-
-      buffer = new byte[bufferSize * 1024];
-
+    }
+    
+    protected override ICryptoTransform CreateEncryptor(string password, string seed)
+    {
       Rfc2898DeriveBytes rfc = new(password, Encoding.ASCII.GetBytes(seed));
-      Key = rfc.GetBytes(16);
-      IV = rfc.GetBytes(16);
-    }
-    
-    public async Task<MemoryStream> Encrypt(MemoryStream stream, Action<float> progress = null)
-    {
-      Check.IsNotNull(stream);
-
-      stream.Position = 0;
-
-      MemoryStream encryptedStream = new();
-      using AesCryptoServiceProvider aesProvider = new();
-      await using CryptoStream cryptoStream = new(encryptedStream, aesProvider.CreateEncryptor(Key, IV), CryptoStreamMode.Write);
-
-      int bytesRead;
-      int bytesReadTotal = 0;
-      do
-      {
-        bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
-        if (bytesRead > 0)
-          await cryptoStream.WriteAsync(buffer, 0, bytesRead);
-        
-        bytesReadTotal += bytesRead;
-        progress?.Invoke((float)bytesReadTotal / stream.Length);
-      } while (bytesRead > 0);
-
-      cryptoStream.FlushFinalBlock();
-
-      progress?.Invoke(1.0f);
+      byte[] key = rfc.GetBytes(16);
+      byte[] iv = rfc.GetBytes(16);
       
-      return encryptedStream;
+      AesCryptoServiceProvider aesProvider = new();
+
+      return aesProvider.CreateEncryptor(key, iv);
     }
 
-    public async Task<MemoryStream> Decrypt(MemoryStream stream, Action<float> progress = null)
+    protected override ICryptoTransform CreateDecryptor(string password, string seed)
     {
-      Check.IsNotNull(stream);
-
-      stream.Position = 0;
-
-      MemoryStream decryptedStream = new();
-      await using MemoryStream encryptedStream = new(stream.ToArray());
-      using AesCryptoServiceProvider aesProvider = new();
-      await using CryptoStream cryptoStream = new(encryptedStream, aesProvider.CreateDecryptor(Key, IV), CryptoStreamMode.Read);
-
-      int bytesRead;
-      int bytesReadTotal = 0;
-      do
-      {
-        bytesRead = await cryptoStream.ReadAsync(buffer, 0, buffer.Length);
-        if (bytesRead > 0)
-          await decryptedStream.WriteAsync(buffer, 0, bytesRead);
-
-        bytesReadTotal += bytesRead;
-        progress?.Invoke((float)bytesReadTotal / stream.Length);
-      } while (bytesRead > 0);
-
-      progress?.Invoke(1.0f);
+      Rfc2898DeriveBytes rfc = new(password, Encoding.ASCII.GetBytes(seed));
+      byte[] key = rfc.GetBytes(16);
+      byte[] iv = rfc.GetBytes(16);
       
-      return decryptedStream;
+      AesCryptoServiceProvider aesProvider = new();
+
+      return aesProvider.CreateDecryptor(key, iv);
     }
   }
 }

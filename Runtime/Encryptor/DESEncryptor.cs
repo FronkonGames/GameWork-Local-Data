@@ -14,89 +14,36 @@
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-using System;
-using System.IO;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
-using FronkonGames.GameWork.Foundation;
 
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
   /// .
   /// </summary>
-  public sealed class DESEncryptor : IEncryptor
+  public sealed class DESEncryptor : EncryptorBase
   {
-    private readonly byte[] buffer;
-    
-    private readonly byte[] Key;
-
-    public DESEncryptor(int bufferSize, string password)
+    public DESEncryptor(int bufferSize, string password) : base(bufferSize, password, password)
     {
-      Check.Greater(bufferSize, 1);
-      Check.IsNotNullOrEmpty(password);
-
-      buffer = new byte[bufferSize * 1024];
-
-      Key = Encoding.ASCII.GetBytes(password);
     }
     
-    public async Task<MemoryStream> Encrypt(MemoryStream stream, Action<float> progress = null)
+    protected override ICryptoTransform CreateEncryptor(string password, string seed)
     {
-      Check.IsNotNull(stream);
-
-      stream.Position = 0;
-
-      MemoryStream encryptedStream = new();
-      using DESCryptoServiceProvider desProvider = new();
-      await using CryptoStream cryptoStream = new(encryptedStream, desProvider.CreateEncryptor(Key, Key), CryptoStreamMode.Write);
-
-      int bytesRead;
-      int bytesReadTotal = 0;
-      do
-      {
-        bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
-        if (bytesRead > 0)
-          await cryptoStream.WriteAsync(buffer, 0, bytesRead);
-        
-        bytesReadTotal += bytesRead;
-        progress?.Invoke((float)bytesReadTotal / stream.Length);
-      } while (bytesRead > 0);
-
-      cryptoStream.FlushFinalBlock();
-
-      progress?.Invoke(1.0f);
+      byte[] key = Encoding.ASCII.GetBytes(password);
       
-      return encryptedStream;
+      DESCryptoServiceProvider desProvider = new();
+
+      return desProvider.CreateEncryptor(key, key);
     }
 
-    public async Task<MemoryStream> Decrypt(MemoryStream stream, Action<float> progress = null)
+    protected override ICryptoTransform CreateDecryptor(string password, string seed)
     {
-      Check.IsNotNull(stream);
-
-      stream.Position = 0;
-
-      MemoryStream decryptedStream = new();
-      await using MemoryStream encryptedStream = new(stream.ToArray());
-      using DESCryptoServiceProvider desProvider = new();
-      await using CryptoStream cryptoStream = new(encryptedStream, desProvider.CreateDecryptor(Key, Key), CryptoStreamMode.Read);
-
-      int bytesRead;
-      int bytesReadTotal = 0;
-      do
-      {
-        bytesRead = await cryptoStream.ReadAsync(buffer, 0, buffer.Length);
-        if (bytesRead > 0)
-          await decryptedStream.WriteAsync(buffer, 0, bytesRead);
-
-        bytesReadTotal += bytesRead;
-        progress?.Invoke((float)bytesReadTotal / stream.Length);
-      } while (bytesRead > 0);
-
-      progress?.Invoke(1.0f);
+      byte[] key = Encoding.ASCII.GetBytes(password);
       
-      return decryptedStream;
+      DESCryptoServiceProvider desProvider = new();
+
+      return desProvider.CreateDecryptor(key, key);
     }
   }
 }
