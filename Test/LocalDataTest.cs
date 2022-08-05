@@ -89,6 +89,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
     private int fileSelected = -1;
     private TestData testData = null;
 
+    private FileResult lastFileresult = FileResult.Ok;
+
     /// <summary>
     /// On initialize.
     /// </summary>
@@ -145,7 +147,12 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
                       localData.Read<TestData>(files[i].Name,
                         progress => statusLabel = $"READING {(progress * 100.0f):00}%",
-                        (result, file) => { statusLabel = "NO ACTIVE FILE OPERATIONS"; testData = file; });
+                        (result, file) =>
+                        {
+                          lastFileresult = result;
+                          statusLabel = "NO ACTIVE FILE OPERATIONS";
+                          testData = file;
+                        });
                     }
                     
                     GUILayout.FlexibleSpace();
@@ -212,25 +219,27 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
               GUILayout.Space(margin);
 
+              const float labelWidth = 75.0f;
+
               GUILayout.BeginVertical("box");
               {
                 GUILayout.BeginHorizontal();
                 {
-                  GUILayout.Label("Kilobytes", GUILayout.Width(75.0f));
+                  GUILayout.Label("Kilobytes", GUILayout.Width(labelWidth));
                   kilobytes = (int)GUILayout.HorizontalSlider(kilobytes, 1.0f, 1024);
                 }
                 GUILayout.EndHorizontal();
 
                 GUILayout.BeginHorizontal();
                 {
-                  GUILayout.Label("Megabytes", GUILayout.Width(75.0f));
+                  GUILayout.Label("Megabytes", GUILayout.Width(labelWidth));
                   megabytes = (int)GUILayout.HorizontalSlider(megabytes, 0.0f, 98, GUILayout.ExpandWidth(true));
                 }
                 GUILayout.EndHorizontal();
                 
                 GUILayout.BeginHorizontal();
                 {
-                  GUILayout.Label("Sequential", GUILayout.Width(60.0f));
+                  GUILayout.Label("Sequential", GUILayout.Width(labelWidth));
                   randomness = GUILayout.HorizontalSlider(randomness, 0.0f, 1.0f, GUILayout.ExpandWidth(true));
                   GUILayout.Label("Random", GUILayout.Width(50.0f));
                 }
@@ -248,7 +257,12 @@ namespace FronkonGames.GameWork.Modules.LocalData
                   localData.Write(new TestData(megabytes * 1024 * 1024 + kilobytes * 1024, randomness),
                     localData.NextAvailableName($"{Integrity}_{Compression}_{Encryption}.data", "_"),
                     progress => statusLabel = $"WRITING {(progress * 100.0f):00}%",
-                    (result, file) => { files = localData.GetFilesInfo(); statusLabel = "NO ACTIVE FILE OPERATIONS"; });
+                    (result, file) =>
+                    {
+                      lastFileresult = result;
+                      files = localData.GetFilesInfo();
+                      statusLabel = "NO ACTIVE FILE OPERATIONS";
+                    });
                 }
               
                 GUILayout.Space(margin);
@@ -288,19 +302,24 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
             GUILayout.BeginVertical(BoxStyle, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
             {
-              if (fileSelected != -1 && testData != null)
+              if (lastFileresult == FileResult.Ok)
               {
-                GUILayout.Label($"File '{files[fileSelected].Name}' ({testData.data.Length.BytesToHumanReadable()})", FontStyle);
-              
-                GUILayout.BeginVertical("box", GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+                if (fileSelected != -1 && testData != null)
                 {
-                  GUILayout.Label($"Message: {testData.message}");
+                  GUILayout.Label($"File '{files[fileSelected].Name}' ({testData.data.Length.BytesToHumanReadable()})", FontStyle);
+              
+                  GUILayout.BeginVertical("box", GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+                  {
+                    GUILayout.Label($"Message: {testData.message}");
                   
-                  string hex = BitConverter.ToString(testData.data[..Math.Min(testData.data.Length, 300)]).Replace("-","");
-                  GUILayout.TextArea(testData.data.Length <= 300 ? hex : hex + "...");
+                    string hex = BitConverter.ToString(testData.data[..Math.Min(testData.data.Length, 300)]).Replace("-","");
+                    GUILayout.TextArea(testData.data.Length <= 300 ? hex : hex + "...");
+                  }
+                  GUILayout.EndVertical();
                 }
-                GUILayout.EndVertical();
               }
+              else if (lastFileresult != FileResult.Cancelled)
+                GUILayout.Label($"<color=red>Error: {lastFileresult.ToString().FromCamelCase()}</color>", FontStyle);
               
               GUILayout.FlexibleSpace();
             }

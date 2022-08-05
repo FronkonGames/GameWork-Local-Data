@@ -25,18 +25,18 @@ namespace FronkonGames.GameWork.Modules.LocalData
   /// </summary>
   public sealed class NullCompressor : ICompressor
   {
-    public async Task<MemoryStream> Compress(MemoryStream stream, Action<float> progress = null)
+    public Task<MemoryStream> Compress(MemoryStream stream, Action<float> progress = null)
     {
       progress?.Invoke(0.0f);
       
-      return stream;
+      return Task.FromResult(stream);
     }
 
-    public async Task<MemoryStream> Decompress(MemoryStream stream, int originalSize, Action<float> progress = null)
+    public Task<MemoryStream> Decompress(MemoryStream stream, int originalSize, Action<float> progress = null)
     {
       progress?.Invoke(0.0f);
       
-      return stream;
+      return Task.FromResult(stream);
     }
   }
 }

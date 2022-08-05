@@ -25,19 +25,19 @@ namespace FronkonGames.GameWork.Modules.LocalData
   /// </summary>
   public sealed class NullEncryptor : IEncryptor
   {
-    public async Task<MemoryStream> Encrypt(MemoryStream stream, Action<float> progress = null)
+    public Task<MemoryStream> Encrypt(MemoryStream stream, Action<float> progress = null)
     {
       progress?.Invoke(0.0f);
       
-      return stream;
+      return Task.FromResult(stream);
     }
     
 
-    public async Task<MemoryStream> Decrypt(MemoryStream stream, Action<float> progress = null)
+    public Task<MemoryStream> Decrypt(MemoryStream stream, Action<float> progress = null)
     {
       progress?.Invoke(0.0f);
       
-      return stream;
+      return Task.FromResult(stream);
     }
   }
 }
