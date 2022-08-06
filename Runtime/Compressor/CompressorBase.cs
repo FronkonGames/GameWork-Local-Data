@@ -17,6 +17,7 @@
 using System;
 using System.IO;
 using System.IO.Compression;
+using System.Threading;
 using System.Threading.Tasks;
 using FronkonGames.GameWork.Foundation;
 
@@ -31,13 +32,16 @@ namespace FronkonGames.GameWork.Modules.LocalData
     
     protected readonly CompressionLevel compressionLevel;
 
-    protected CompressorBase(int bufferSize, CompressionLevel compressionLevel)
+    private readonly CancellationToken cancellationToken;
+
+    protected CompressorBase(int bufferSize, CompressionLevel compressionLevel, CancellationToken cancellationToken)
     {
       Check.Greater(bufferSize, 1);
 
       buffer = new byte[bufferSize * 1024];
 
       this.compressionLevel = compressionLevel;
+      this.cancellationToken = cancellationToken;
     }
 
     protected abstract Stream CreateCompressorStream(MemoryStream stream);
@@ -55,18 +59,19 @@ namespace FronkonGames.GameWork.Modules.LocalData
       Stream compressorStream = CreateCompressorStream(outStream);
       do
       {
-        bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+        bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
         if (bytesRead > 0)
         {
-          await compressorStream.WriteAsync(buffer, 0, buffer.Length);
-          await compressorStream.FlushAsync();
-        }
+          await compressorStream.WriteAsync(buffer, 0, buffer.Length, cancellationToken);
+          await compressorStream.FlushAsync(cancellationToken);
 
-        bytesReadTotal += bytesRead;
-        progress?.Invoke((float)bytesReadTotal / stream.Length);
+          bytesReadTotal += bytesRead;
+          progress?.Invoke((float)bytesReadTotal / stream.Length);
+        }
       } while (bytesRead > 0);
       
       compressorStream.Close();
+      progress?.Invoke(1.0f);
       outStream.Position = 0;
 
       return outStream;
@@ -84,18 +89,19 @@ namespace FronkonGames.GameWork.Modules.LocalData
       Stream decompressorStream = CreateDecompressorStream(stream);
       do
       {
-        bytesRead = await decompressorStream.ReadAsync(buffer, 0, buffer.Length);
+        bytesRead = await decompressorStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
         if (bytesRead > 0)
         {
-          await outStream.WriteAsync(buffer, 0, buffer.Length);
-          await outStream.FlushAsync();
-        }
+          await outStream.WriteAsync(buffer, 0, buffer.Length, cancellationToken);
+          await outStream.FlushAsync(cancellationToken);
 
-        bytesReadTotal += bytesRead;
-        progress?.Invoke((float)bytesReadTotal / stream.Length);
+          bytesReadTotal += bytesRead;
+          progress?.Invoke((float)bytesReadTotal / originalSize);
+        }
       } while (bytesRead > 0);
 
       decompressorStream.Close();
+      progress?.Invoke(1.0f);
       outStream.Position = 0;
 
       return outStream;

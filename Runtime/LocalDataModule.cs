@@ -20,10 +20,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using System.Runtime.Serialization.Formatters.Binary;
-using System.Runtime.Serialization.Json;
 using System.Threading;
-using System.Xml.Schema;
-using System.Xml.Serialization;
 using UnityEngine;
 using FronkonGames.GameWork.Core;
 using FronkonGames.GameWork.Foundation;
@@ -86,7 +83,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
     private Action<float> clientProgress;
     private float currentProgress;
-    private int progressSteps;
+    private int totalSteps = 0;
+    private int currentStep;
 
     /// <summary>
     /// When initialize.
@@ -104,6 +102,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// </summary>
     public void OnInitialized()
     {
+      ResetProgress(null);
     }
 
     /// <summary>
@@ -111,6 +110,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// </summary>
     public void OnDeinitialize()
     {
+      Cancel();
     }
 
     /// <summary>
@@ -218,7 +218,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
       return availableName;
     }
 
-    public void CancelAsyncOperations() => cancellationSource?.Cancel(); 
+    public void Cancel() => cancellationSource?.Cancel(); 
 
     /// <summary>
     /// 
@@ -240,6 +240,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
       MemoryStream stream = new();
       cancellationSource = new();
+      CancellationToken cancellationToken = cancellationSource.Token;
 
       ResetProgress(onProgress);
 
@@ -264,11 +265,13 @@ namespace FronkonGames.GameWork.Modules.LocalData
           writer.Write((byte)fileCompression);
           writer.Write((byte)fileEncryption);
 
-          CountProgessSteps();
+          IIntegrity integrity = CreateFileIntegrity(fileIntegrity, cancellationToken);
+          ICompressor compressor = CreateFileCompressor(fileCompression, cancellationToken);
+          IEncryptor encryptor = CreateFileEncryptor(fileEncryption, cancellationToken);
 
-          IIntegrity integrity = CreateFileIntegrity(fileIntegrity);
-          ICompressor compressor = CreateFileCompressor(fileCompression);
-          IEncryptor encryptor = CreateFileEncryptor(fileEncryption);
+          totalSteps += fileIntegrity   != FileIntegrity.None ? 1 : 0;
+          totalSteps += fileCompression != FileCompression.None ? 1 : 0;
+          totalSteps += fileEncryption  != FileEncryption.None ? 1 : 0;
 
 #if ENABLE_PROFILING
           using (Profiling.Time($"Serializing {file}"))
@@ -286,8 +289,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
           {
             stream = await compressor.Compress(stream, CalculateProgress);
           }
-
-          UpdateProgress((int)fileEncryption);
+          currentStep += fileCompression != FileCompression.None ? 1 : 0;
 
 #if ENABLE_PROFILING
           using (Profiling.Time($"Encrypting {file} using {fileEncryption}"))
@@ -295,8 +297,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
           {
             stream = await encryptor.Encrypt(stream, CalculateProgress);
           }
-
-          UpdateProgress((int)fileIntegrity);
+          currentStep += fileEncryption != FileEncryption.None ? 1 : 0;
 
           string hash = string.Empty;
 #if ENABLE_PROFILING
@@ -305,6 +306,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
           {
             hash = await integrity.Calculate(stream, CalculateProgress);
           }
+          currentStep += fileIntegrity != FileIntegrity.None ? 1 : 0;
 
           writer.Write(hash);
           writer.Write(uncompressedSize);
@@ -317,10 +319,10 @@ namespace FronkonGames.GameWork.Modules.LocalData
             for (int offset = 0; offset < data.Length; )
             {
               int length = Math.Min(bufferSize * 1024, data.Length - offset);
-              await fileStream.WriteAsync(data, offset, length);
+              await fileStream.WriteAsync(data, offset, length, cancellationToken);
               offset += length;
 
-              onProgress?.Invoke((float)offset / data.Length * (1.0f / progressSteps) + currentProgress);
+              CalculateProgress((float)offset / data.Length);
             }
           }
         }
@@ -329,7 +331,10 @@ namespace FronkonGames.GameWork.Modules.LocalData
       {
         result = FileResult.Cancelled;
 
-        Log.Warning($"File '{file}' writing canceled.");
+        if (Exists(file) == true)
+          Delete(file);
+
+        Log.Info($"File '{file}' writing canceled.");
       }
       catch (Exception e)
       {
@@ -341,9 +346,9 @@ namespace FronkonGames.GameWork.Modules.LocalData
       {
         await stream.DisposeAsync();
 
+        cancellationSource.Dispose();
         cancellationSource = null;
         clientProgress = null;
-        progressSteps = 1;
 
         onProgress?.Invoke(1.0f);
         
@@ -365,13 +370,14 @@ namespace FronkonGames.GameWork.Modules.LocalData
       Check.GreaterOrEqual(bufferSize, 4);
 
       FileResult result = FileResult.Ok;
-
-      ResetProgress(onProgress);
       
       T data = null;
       MemoryStream stream = new();
       cancellationSource = new CancellationTokenSource();
+      CancellationToken cancellationToken = cancellationSource.Token;
 
+      ResetProgress(onProgress);
+      
       try
       {
         FileInfo fileInfo = GetFileInfo(file);
@@ -389,12 +395,14 @@ namespace FronkonGames.GameWork.Modules.LocalData
           string hash = binaryReader.ReadString();
           int uncompressedSize = binaryReader.ReadInt32();
 
-          CountProgessSteps();
+          IIntegrity integrity = CreateFileIntegrity(fileIntegrity, cancellationToken);
+          ICompressor compressor = CreateFileCompressor(fileCompression, cancellationToken);
+          IEncryptor encryptor = CreateFileEncryptor(fileEncryption, cancellationToken);
 
-          IIntegrity integrity = CreateFileIntegrity(fileIntegrity);
-          ICompressor compressor = CreateFileCompressor(fileCompression);
-          IEncryptor encryptor = CreateFileEncryptor(fileEncryption);
-
+          totalSteps += fileIntegrity   != FileIntegrity.None ? 1 : 0;
+          totalSteps += fileCompression != FileCompression.None ? 1 : 0;
+          totalSteps += fileEncryption  != FileEncryption.None ? 1 : 0;
+          
 #if ENABLE_PROFILING
           using (Profiling.Time($"Reading {file} data"))
 #endif
@@ -402,23 +410,23 @@ namespace FronkonGames.GameWork.Modules.LocalData
             int bytesRead = 0;
             do
             {
-              bytesRead = await fileStream.ReadAsync(buffer, 0, buffer.Length);
+              bytesRead = await fileStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
               if (bytesRead > 0)
-                await stream.WriteAsync(buffer, 0, bytesRead);
-              
-              onProgress?.Invoke(((float)stream.Length / fileStream.Length) * 0.5f);
+                await stream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
+
+              CalculateProgress((float)stream.Length / fileStream.Length);
             } while (bytesRead > 0);
           }
-          
+          currentStep++;
+
 #if ENABLE_PROFILING
           using (Profiling.Time($"Checking {file} integrity"))
 #endif
           {
             result = await integrity.Check(stream, hash, CalculateProgress) ? FileResult.Ok : FileResult.IntegrityFailure;
           }
+          currentStep += fileIntegrity != FileIntegrity.None ? 1 : 0;
 
-          UpdateProgress((int)fileEncryption);
-          
           if (result == FileResult.Ok)
           {
 #if ENABLE_PROFILING
@@ -427,15 +435,15 @@ namespace FronkonGames.GameWork.Modules.LocalData
             {
               stream = await encryptor.Decrypt(stream, CalculateProgress);
             }
+            currentStep += fileEncryption != FileEncryption.None ? 1 : 0;
 
-            UpdateProgress((int)fileCompression);
-          
 #if ENABLE_PROFILING
             using (Profiling.Time($"Decompressing {file}"))
 #endif
             {
               stream = await compressor.Decompress(stream, uncompressedSize, CalculateProgress);
             }
+            currentStep += fileCompression != FileCompression.None ? 1 : 0;
 
 #if ENABLE_PROFILING
             using (Profiling.Time($"Deserializing {file}"))
@@ -457,7 +465,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
       {
         result = FileResult.Cancelled;
 
-        Log.Warning($"File '{file}' loading canceled.");
+        Log.Info($"File '{file}' reading canceled.");
       }
       catch (Exception e)
       {
@@ -469,9 +477,9 @@ namespace FronkonGames.GameWork.Modules.LocalData
       {
         await stream.DisposeAsync();
         
+        cancellationSource.Dispose();
         cancellationSource = null;
         clientProgress = null;
-        progressSteps = 1;
 
         onProgress?.Invoke(1.0f);
 
@@ -502,15 +510,15 @@ namespace FronkonGames.GameWork.Modules.LocalData
         Log.Warning($"File '{file}' not found");
     }
 
-    private IIntegrity CreateFileIntegrity(FileIntegrity fileIntegrity)
+    private IIntegrity CreateFileIntegrity(FileIntegrity fileIntegrity, CancellationToken cancellationToken)
     {
       IIntegrity integrity = fileIntegrity switch
       {
         FileIntegrity.None   => new NullIntegrity(),
-        FileIntegrity.MD5    => new MD5Integrity(bufferSize),
-        FileIntegrity.SHA1   => new SHA1Integrity(bufferSize),
-        FileIntegrity.SHA256 => new SHA256Integrity(bufferSize),
-        FileIntegrity.SHA512 => new SHA512Integrity(bufferSize),
+        FileIntegrity.MD5    => new MD5Integrity(bufferSize, cancellationToken),
+        FileIntegrity.SHA1   => new SHA1Integrity(bufferSize, cancellationToken),
+        FileIntegrity.SHA256 => new SHA256Integrity(bufferSize, cancellationToken),
+        FileIntegrity.SHA512 => new SHA512Integrity(bufferSize, cancellationToken),
         _ => null
       };
       Check.IsNotNull(integrity);
@@ -518,14 +526,14 @@ namespace FronkonGames.GameWork.Modules.LocalData
       return integrity;
     }
 
-    private ICompressor CreateFileCompressor(FileCompression fileCompression)
+    private ICompressor CreateFileCompressor(FileCompression fileCompression, CancellationToken cancellationToken)
     {
       ICompressor compressor = fileCompression switch
       {
         FileCompression.None   => new NullCompressor(),
-        FileCompression.Zip    => new ZipCompressor(bufferSize, compressionLevel),
-        FileCompression.GZip   => new GZipCompressor(bufferSize, compressionLevel),
-        FileCompression.Brotli => new BrotliCompressor(bufferSize, compressionLevel),
+        FileCompression.Zip    => new ZipCompressor(bufferSize, compressionLevel, cancellationToken),
+        FileCompression.GZip   => new GZipCompressor(bufferSize, compressionLevel, cancellationToken),
+        FileCompression.Brotli => new BrotliCompressor(bufferSize, compressionLevel, cancellationToken),
         _ => null
       };
       Check.IsNotNull(compressor);
@@ -533,15 +541,15 @@ namespace FronkonGames.GameWork.Modules.LocalData
       return compressor;
     }
 
-    private IEncryptor CreateFileEncryptor(FileEncryption fileEncryption)
+    private IEncryptor CreateFileEncryptor(FileEncryption fileEncryption, CancellationToken cancellationToken)
     {
       IEncryptor encryptor = fileEncryption switch
       {
         FileEncryption.None       => new NullEncryptor(),
-        FileEncryption.AES        => new AESEncryptor(bufferSize, password, seed),
-        FileEncryption.RC2        => new RC2Encryptor(bufferSize, password),
-        FileEncryption.DES        => new DESEncryptor(bufferSize, password),
-        FileEncryption.TripleDES  => new TripleDESEncryptor(bufferSize, password, seed),
+        FileEncryption.AES        => new AESEncryptor(bufferSize, password, seed, cancellationToken),
+        FileEncryption.RC2        => new RC2Encryptor(bufferSize, password, string.Empty, cancellationToken),
+        FileEncryption.DES        => new DESEncryptor(bufferSize, password, string.Empty, cancellationToken),
+        FileEncryption.TripleDES  => new TripleDESEncryptor(bufferSize, password, seed, cancellationToken),
         _ => null
       };
       Check.IsNotNull(encryptor);
@@ -551,32 +559,19 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
     private void CalculateProgress(float progress)
     {
-      Check.NotEqual(progressSteps, 0);
+      currentProgress = (progress + currentStep) / totalSteps;
 
-      clientProgress?.Invoke((progress / progressSteps + currentProgress) * 0.5f);
+      clientProgress?.Invoke(Mathf.Clamp01(currentProgress));
     }
 
     private void ResetProgress(Action<float> progress)
     {
       clientProgress = progress;
       currentProgress = 0.0f;
+      currentStep = 0;
+      totalSteps = 1;
+
       progress?.Invoke(0.0f);
-      progressSteps = 0;
-    }
-
-    private void CountProgessSteps()
-    {
-      progressSteps = 1;
-
-      if (fileIntegrity != FileIntegrity.None)     progressSteps++;
-      if (fileCompression != FileCompression.None) progressSteps++;
-      if (fileEncryption != FileEncryption.None)   progressSteps++;
-    }
-
-    private void UpdateProgress(int type)
-    {
-      if (type > 0 && progressSteps > 0.0f)
-        currentProgress += 1.0f / progressSteps;
     }
 
     private static string ComposePath()

@@ -16,6 +16,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 using System.IO;
 using System.IO.Compression;
+using System.Threading;
 
 namespace FronkonGames.GameWork.Modules.LocalData
 {
@@ -24,8 +25,11 @@ namespace FronkonGames.GameWork.Modules.LocalData
   /// </summary>
   public sealed class GZipCompressor : CompressorBase
   {
-    public GZipCompressor(int bufferSize, CompressionLevel compressionLevel) : base(bufferSize, compressionLevel) { }
-
+    public GZipCompressor(int bufferSize, CompressionLevel compressionLevel, CancellationToken cancellationToken)
+      : base(bufferSize, compressionLevel, cancellationToken)
+    {
+    }
+    
     protected override Stream CreateCompressorStream(MemoryStream stream) => new GZipStream(stream, compressionLevel, true);
     
     protected override Stream CreateDecompressorStream(MemoryStream stream) => new GZipStream(stream, CompressionMode.Decompress, true);

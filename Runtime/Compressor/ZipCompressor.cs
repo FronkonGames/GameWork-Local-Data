@@ -16,6 +16,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 using System.IO;
 using System.IO.Compression;
+using System.Threading;
 
 namespace FronkonGames.GameWork.Modules.LocalData
 {
@@ -24,7 +25,10 @@ namespace FronkonGames.GameWork.Modules.LocalData
   /// </summary>
   public sealed class ZipCompressor : CompressorBase
   {
-    public ZipCompressor(int bufferSize, CompressionLevel compressionLevel) : base(bufferSize, compressionLevel) { }
+    public ZipCompressor(int bufferSize, CompressionLevel compressionLevel, CancellationToken cancellationToken)
+      : base(bufferSize, compressionLevel, cancellationToken)
+    {
+    }
 
     protected override Stream CreateCompressorStream(MemoryStream stream) => new DeflateStream(stream, compressionLevel, true);
     

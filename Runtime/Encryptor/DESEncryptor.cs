@@ -16,6 +16,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 
 namespace FronkonGames.GameWork.Modules.LocalData
 {
@@ -24,7 +25,10 @@ namespace FronkonGames.GameWork.Modules.LocalData
   /// </summary>
   public sealed class DESEncryptor : EncryptorBase
   {
-    public DESEncryptor(int bufferSize, string password) : base(bufferSize, password) { }
+    public DESEncryptor(int bufferSize, string password, string seed, CancellationToken cancellationToken)
+      : base(bufferSize, password, seed, cancellationToken)
+    {
+    }
     
     protected override ICryptoTransform CreateEncryptor()
     {

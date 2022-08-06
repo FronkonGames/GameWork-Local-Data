@@ -253,7 +253,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
               {
                 if (GUILayout.Button($"CREATE {(megabytes * 1024 * 1024 + kilobytes * 1024).BytesToHumanReadable()} FILE", ButtonStyle) == true)
                 {
-                  localData.CancelAsyncOperations();
+                  localData.Cancel();
+
                   localData.Write(new TestData(megabytes * 1024 * 1024 + kilobytes * 1024, randomness),
                     localData.NextAvailableName($"{Integrity}_{Compression}_{Encryption}.data", "_"),
                     progress => statusLabel = $"WRITING {(progress * 100.0f):00}%",
@@ -271,7 +272,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
                 
                 if (GUILayout.Button("DELETE", ButtonStyle) == true && fileSelected < files.Count)
                 {
-                  localData.CancelAsyncOperations();
+                  localData.Cancel();
+
                   localData.Delete(files[fileSelected].Name);
                   fileSelected = -1;
               
@@ -281,8 +283,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
                 GUI.enabled = localData.Busy;
               
                 if (GUILayout.Button(localData.Busy ? "<color=red>CANCEL</color>" : "CANCEL", ButtonStyle) == true)
-                {
-                }
+                  localData.Cancel();
               }
               GUILayout.EndHorizontal();
              
@@ -312,8 +313,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
                   {
                     GUILayout.Label($"Message: {testData.message}");
                   
-                    string hex = BitConverter.ToString(testData.data[..Math.Min(testData.data.Length, 300)]).Replace("-","");
-                    GUILayout.TextArea(testData.data.Length <= 300 ? hex : hex + "...");
+                    string hex = BitConverter.ToString(testData.data[..Math.Min(testData.data.Length, 500)]).Replace("-","");
+                    GUILayout.TextArea(testData.data.Length <= 500 ? hex : hex + "...");
                   }
                   GUILayout.EndVertical();
                 }

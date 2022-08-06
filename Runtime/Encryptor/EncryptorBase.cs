@@ -17,6 +17,7 @@
 using System;
 using System.IO;
 using System.Security.Cryptography;
+using System.Threading;
 using System.Threading.Tasks;
 using FronkonGames.GameWork.Foundation;
 
@@ -29,18 +30,21 @@ namespace FronkonGames.GameWork.Modules.LocalData
   {
     private readonly byte[] buffer;
 
-    protected ICryptoTransform cryptoTransform;
     protected readonly string password;   // @TODO: Use SafeString.
     protected readonly string seed;       // @TODO: Use SafeString.
 
-    public EncryptorBase(int bufferSize, string password, string seed = default)
+    private readonly CancellationToken cancellationToken;
+
+    protected EncryptorBase(int bufferSize, string password, string seed = default, CancellationToken cancellationToken = default)
     {
       Check.Greater(bufferSize, 1);
       Check.IsNotNullOrEmpty(password);
 
+      buffer = new byte[bufferSize * 1024];
+
       this.password = password;
       this.seed = seed;
-      buffer = new byte[bufferSize * 1024];
+      this.cancellationToken = cancellationToken;
     }
 
     protected abstract ICryptoTransform CreateEncryptor();
@@ -60,12 +64,14 @@ namespace FronkonGames.GameWork.Modules.LocalData
       int bytesReadTotal = 0;
       do
       {
-        bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+        bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
         if (bytesRead > 0)
-          await cryptoStream.WriteAsync(buffer, 0, bytesRead);
+        {
+          await cryptoStream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
         
-        bytesReadTotal += bytesRead;
-        progress?.Invoke((float)bytesReadTotal / stream.Length);
+          bytesReadTotal += bytesRead;
+          progress?.Invoke((float)bytesReadTotal / stream.Length);
+        }
       } while (bytesRead > 0);
 
       cryptoStream.FlushFinalBlock();
@@ -90,12 +96,14 @@ namespace FronkonGames.GameWork.Modules.LocalData
       int bytesReadTotal = 0;
       do
       {
-        bytesRead = await cryptoStream.ReadAsync(buffer, 0, buffer.Length);
+        bytesRead = await cryptoStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
         if (bytesRead > 0)
-          await decryptedStream.WriteAsync(buffer, 0, bytesRead);
-
-        bytesReadTotal += bytesRead;
-        progress?.Invoke((float)bytesReadTotal / stream.Length);
+        {
+          await decryptedStream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
+          
+          bytesReadTotal += bytesRead;
+          progress?.Invoke((float)bytesReadTotal / stream.Length);
+        }
       } while (bytesRead > 0);
 
       progress?.Invoke(1.0f);

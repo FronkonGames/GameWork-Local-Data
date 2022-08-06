@@ -17,9 +17,9 @@
 using System;
 using System.IO;
 using System.Security.Cryptography;
+using System.Threading;
 using System.Threading.Tasks;
 using FronkonGames.GameWork.Foundation;
-using UnityEngine;
 
 namespace FronkonGames.GameWork.Modules.LocalData
 {
@@ -30,14 +30,18 @@ namespace FronkonGames.GameWork.Modules.LocalData
   {
     private readonly byte[] buffer;
 
-    public IntegrityBase(int bufferSize)
+    private readonly CancellationToken cancellationToken;
+
+    protected IntegrityBase(int bufferSize, CancellationToken cancellationToken)
     {
       Foundation.Check.Greater(bufferSize, 1);
 
       buffer = new byte[bufferSize * 1024];
+
+      this.cancellationToken = cancellationToken;
     }
 
-    public abstract HashAlgorithm CreateHashAlgorithm();
+    protected abstract HashAlgorithm CreateHashAlgorithm();
 
     public async Task<string> Calculate(MemoryStream stream, Action<float> progress = null)
     {
@@ -47,16 +51,19 @@ namespace FronkonGames.GameWork.Modules.LocalData
       using HashAlgorithm hashAlgorithm = CreateHashAlgorithm();
       do
       {
-        bytesRead = await stream.ReadAsync(buffer, 0 , buffer.Length);
+        bytesRead = await stream.ReadAsync(buffer, 0 , buffer.Length, cancellationToken);
         if (bytesRead > 0)
+        {
           hashAlgorithm.TransformBlock(buffer, 0, bytesRead, null, 0);
 
-        bytesReadTotal += bytesRead;
-        progress?.Invoke((float)bytesReadTotal / stream.Length);
+          bytesReadTotal += bytesRead;
+          progress?.Invoke((float)bytesReadTotal / stream.Length);
+        }
       } while (bytesRead > 0);
 
       hashAlgorithm.TransformFinalBlock(buffer, 0, 0);
 
+      progress?.Invoke(1.0f);
       stream.Position = 0;
 
       return BitConverter.ToString(hashAlgorithm.Hash).Replace("-", "").ToUpperInvariant();
@@ -64,7 +71,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
     public async Task<bool> Check(MemoryStream stream, string hash, Action<float> progress = null)
     {
-      string streamHash = await Calculate(stream);
+      string streamHash = await Calculate(stream, progress);
 
       return streamHash.Equals(hash);
     }

@@ -15,6 +15,7 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 using System.Security.Cryptography;
+using System.Threading;
 
 namespace FronkonGames.GameWork.Modules.LocalData
 {
@@ -23,8 +24,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
   /// </summary>
   public sealed class SHA1Integrity : IntegrityBase
   {
-    public SHA1Integrity(int bufferSize) : base(bufferSize) { }
-    
-    public override HashAlgorithm CreateHashAlgorithm() => SHA1.Create();
+    public SHA1Integrity(int bufferSize, CancellationToken cancellationToken) : base(bufferSize, cancellationToken) { }
+
+    protected override HashAlgorithm CreateHashAlgorithm() => SHA1.Create();
   }
 }
