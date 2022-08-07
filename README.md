@@ -1,3 +1,4 @@
+<p align="center"><img src="Documentation/Animation.gif" /></p>
 <p align="center"><b>Async Load/Save Local Data With Compression, Encryption And Integrity Check</b></p>
 <br>
 

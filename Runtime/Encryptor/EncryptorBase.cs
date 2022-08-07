@@ -72,7 +72,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
           bytesReadTotal += bytesRead;
           progress?.Invoke((float)bytesReadTotal / stream.Length);
         }
-      } while (bytesRead > 0);
+      } while (bytesRead > 0 && cancellationToken.IsCancellationRequested == false);
 
       cryptoStream.FlushFinalBlock();
 
@@ -104,7 +104,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
           bytesReadTotal += bytesRead;
           progress?.Invoke((float)bytesReadTotal / stream.Length);
         }
-      } while (bytesRead > 0);
+      } while (bytesRead > 0 && cancellationToken.IsCancellationRequested == false);
 
       progress?.Invoke(1.0f);
       

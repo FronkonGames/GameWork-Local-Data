@@ -59,7 +59,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
           bytesReadTotal += bytesRead;
           progress?.Invoke((float)bytesReadTotal / stream.Length);
         }
-      } while (bytesRead > 0);
+      } while (bytesRead > 0 && cancellationToken.IsCancellationRequested == false);
 
       hashAlgorithm.TransformFinalBlock(buffer, 0, 0);
 

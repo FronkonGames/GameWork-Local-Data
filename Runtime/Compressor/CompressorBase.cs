@@ -68,7 +68,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
           bytesReadTotal += bytesRead;
           progress?.Invoke((float)bytesReadTotal / stream.Length);
         }
-      } while (bytesRead > 0);
+      } while (bytesRead > 0 && cancellationToken.IsCancellationRequested == false);
       
       compressorStream.Close();
       progress?.Invoke(1.0f);
@@ -98,7 +98,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
           bytesReadTotal += bytesRead;
           progress?.Invoke((float)bytesReadTotal / originalSize);
         }
-      } while (bytesRead > 0);
+      } while (bytesRead > 0 && cancellationToken.IsCancellationRequested == false);
 
       decompressorStream.Close();
       progress?.Invoke(1.0f);
