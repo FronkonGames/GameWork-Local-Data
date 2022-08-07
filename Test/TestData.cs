@@ -40,7 +40,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
       bool random = false;
       for (int i = 0; i < size; ++i)
       {
-        data[i] = random ? (byte)Random.Range(0, 255) : (byte)(i % 256);
+        data[i] = random ? (byte)Random.Range(0, 255) : (byte)(i % 255);
 
         if (i % 1024 == 0)
           random = Random.value < randomness;
