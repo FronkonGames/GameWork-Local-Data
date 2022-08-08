@@ -21,10 +21,16 @@ using System.Threading.Tasks;
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
-  /// .
+  /// It does not perform any integrity calculations.
   /// </summary>
   public sealed class NullIntegrity : IIntegrity
   {
+    /// <summary>
+    /// Calculation of the integrity of a stream.
+    /// </summary>
+    /// <param name="stream">Memory stream.</param>
+    /// <param name="progress">Progress of the calculation, from 0 to 1.</param>
+    /// <returns>Empty string.</returns>
     public Task<string> Calculate(MemoryStream stream, Action<float> progress = null)
     {
       progress?.Invoke(0.0f);
@@ -32,6 +38,13 @@ namespace FronkonGames.GameWork.Modules.LocalData
       return Task.FromResult(string.Empty); 
     }
 
+    /// <summary>
+    /// Checks the integrity of a stream.
+    /// </summary>
+    /// <param name="stream">Memory stream to check.</param>
+    /// <param name="hash">Hash.</param>
+    /// <param name="progress">Progress of the calculation, from 0 to 1.</param>
+    /// <returns>Always blue, I mean, true.</returns>
     public Task<bool> Check(MemoryStream stream, string hash, Action<float> progress = null)
     {
       progress?.Invoke(0.0f);

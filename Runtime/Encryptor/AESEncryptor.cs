@@ -21,10 +21,17 @@ using System.Threading;
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
-  /// .
+  /// AES encryptor.
   /// </summary>
   public sealed class AESEncryptor : EncryptorBase
   {
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="bufferSize">Buffer size, in kB</param>
+    /// <param name="password">Password.</param>
+    /// <param name="seed">Seed.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     public AESEncryptor(int bufferSize, string password, string seed, CancellationToken cancellationToken)
       : base(bufferSize, password, seed, cancellationToken)
     {

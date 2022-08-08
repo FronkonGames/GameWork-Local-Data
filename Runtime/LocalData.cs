@@ -19,11 +19,14 @@ using System;
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
-  /// .
+  /// Local data file.
   /// </summary>
   [Serializable]
   public abstract class LocalData : ILocalData
   {
+    /// <summary>
+    /// 'Game:Work' signature.
+    /// </summary>
     public string Signature => "GW";
   }
 }

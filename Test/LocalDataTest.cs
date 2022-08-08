@@ -258,7 +258,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
                   localData.Write(new TestData(megabytes * 1024 * 1024 + kilobytes * 1024, randomness),
                     localData.NextAvailableName($"{Integrity}_{Compression}_{Encryption}.data", "_"),
                     progress => statusLabel = $"WRITING {(progress * 100.0f):00}%",
-                    (result, file) =>
+                    (result) =>
                     {
                       lastFileresult = result;
                       files = localData.GetFilesInfo();

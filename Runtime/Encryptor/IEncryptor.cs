@@ -21,12 +21,24 @@ using System.Threading.Tasks;
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
-  /// .
+  /// Interface for encryption / decryption.
   /// </summary>
   public interface IEncryptor
   {
+    /// <summary>
+    /// Stream encryption.
+    /// </summary>
+    /// <param name="stream">Memory stream.</param>
+    /// <param name="progress">Progress of the encryption, from 0 to 1.</param>
+    /// <returns>Encrypted stream.</returns>
     public Task<MemoryStream> Encrypt(MemoryStream stream, Action<float> progress = null);
 
+    /// <summary>
+    /// Stream decryption.
+    /// </summary>
+    /// <param name="stream">Encrypted memory stream.</param>
+    /// <param name="progress">Progress of the decryption, from 0 to 1.</param>
+    /// <returns>Decrypted stream.</returns>
     public Task<MemoryStream> Decrypt(MemoryStream stream, Action<float> progress = null);
   }
 }

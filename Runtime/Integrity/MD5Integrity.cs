@@ -20,7 +20,7 @@ using System.Threading;
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
-  /// .
+  /// Integrity calculation based on MD5.
   /// </summary>
   public sealed class MD5Integrity : IntegrityBase
   {

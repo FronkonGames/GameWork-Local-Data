@@ -21,12 +21,25 @@ using System.Threading.Tasks;
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
-  /// .
+  /// Compression interface.
   /// </summary>
   public interface ICompressor
   {
+    /// <summary>
+    /// Compresses a stream.
+    /// </summary>
+    /// <param name="stream">Memory stream.</param>
+    /// <param name="progress">Progress of the compression, from 0 to 1.</param>
+    /// <returns>Compressed stream.</returns>
     public Task<MemoryStream> Compress(MemoryStream stream, Action<float> progress = null);
 
+    /// <summary>
+    /// Descompresses a stream.
+    /// </summary>
+    /// <param name="stream">Compressed memory stream.</param>
+    /// <param name="originalSize">Size of the uncompressed stream.</param>
+    /// <param name="progress">Progress of the decompression, from 0 to 1.</param>
+    /// <returns>Decompressed stream.</returns>
     public Task<MemoryStream> Decompress(MemoryStream stream, int originalSize, Action<float> progress = null);
   }  
 }

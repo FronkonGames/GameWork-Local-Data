@@ -24,7 +24,7 @@ using FronkonGames.GameWork.Foundation;
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
-  /// .
+  /// File encryption / decryption base.
   /// </summary>
   public abstract class EncryptorBase : IEncryptor
   {
@@ -47,10 +47,12 @@ namespace FronkonGames.GameWork.Modules.LocalData
       this.cancellationToken = cancellationToken;
     }
 
-    protected abstract ICryptoTransform CreateEncryptor();
-
-    protected abstract ICryptoTransform CreateDecryptor();
-
+    /// <summary>
+    /// Stream encryption.
+    /// </summary>
+    /// <param name="stream">Memory stream.</param>
+    /// <param name="progress">Progress of the encryption, from 0 to 1.</param>
+    /// <returns>Encrypted stream.</returns>
     public async Task<MemoryStream> Encrypt(MemoryStream stream, Action<float> progress = null)
     {
       Check.IsNotNull(stream);
@@ -81,6 +83,12 @@ namespace FronkonGames.GameWork.Modules.LocalData
       return encryptedStream;
     }
 
+    /// <summary>
+    /// Stream decryption.
+    /// </summary>
+    /// <param name="stream">Encrypted memory stream.</param>
+    /// <param name="progress">Progress of the decryption, from 0 to 1.</param>
+    /// <returns>Decrypted stream.</returns>
     public async Task<MemoryStream> Decrypt(MemoryStream stream, Action<float> progress = null)
     {
       Check.IsNotNull(stream);
@@ -110,5 +118,9 @@ namespace FronkonGames.GameWork.Modules.LocalData
       
       return decryptedStream;
     }
+
+    protected abstract ICryptoTransform CreateEncryptor();
+
+    protected abstract ICryptoTransform CreateDecryptor();
   }
 }

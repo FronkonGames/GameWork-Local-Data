@@ -21,10 +21,16 @@ using System.Threading.Tasks;
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
-  /// .
+  /// It does not make any kind of encryption.
   /// </summary>
   public sealed class NullEncryptor : IEncryptor
   {
+    /// <summary>
+    /// Stream encryption.
+    /// </summary>
+    /// <param name="stream">Memory stream.</param>
+    /// <param name="progress">Progress of the encryption, from 0 to 1.</param>
+    /// <returns>Same stream.</returns>
     public Task<MemoryStream> Encrypt(MemoryStream stream, Action<float> progress = null)
     {
       progress?.Invoke(0.0f);
@@ -32,7 +38,12 @@ namespace FronkonGames.GameWork.Modules.LocalData
       return Task.FromResult(stream);
     }
     
-
+    /// <summary>
+    /// Stream decryption.
+    /// </summary>
+    /// <param name="stream">Memory stream.</param>
+    /// <param name="progress">Progress of the decryption, from 0 to 1.</param>
+    /// <returns>Same stream.</returns>
     public Task<MemoryStream> Decrypt(MemoryStream stream, Action<float> progress = null)
     {
       progress?.Invoke(0.0f);

@@ -21,10 +21,17 @@ using System.Threading;
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
-  /// .
+  /// DES encryptor.
   /// </summary>
   public sealed class DESEncryptor : EncryptorBase
   {
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="bufferSize">Buffer size, in kB</param>
+    /// <param name="password">Password.</param>
+    /// <param name="seed">Seed.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     public DESEncryptor(int bufferSize, string password, string seed, CancellationToken cancellationToken)
       : base(bufferSize, password, seed, cancellationToken)
     {

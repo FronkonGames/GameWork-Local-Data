@@ -20,7 +20,7 @@ using System.Threading;
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
-  /// .
+  /// Integrity calculation based on SHA-512.
   /// </summary>
   public sealed class SHA512Integrity : IntegrityBase
   {

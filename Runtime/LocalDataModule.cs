@@ -26,7 +26,7 @@ using CompressionLevel = System.IO.Compression.CompressionLevel;
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
-  /// .
+  /// Module for asynchronous reading / writing of local files.
   /// </summary>
   public sealed partial class LocalDataModule : MonoBehaviourModule,
                                                 IInitializable
@@ -36,15 +36,30 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// </summary>
     /// <value>Value</value>
     public bool Initialized { get; set; }
-    
-    public string Path { get; set; }
 
+    /// <summary>
+    /// Working path.
+    /// </summary>
+    public string Path { get; private set; }
+
+    /// <summary>
+    /// Hash algorithm to calculate file integrity (default None).
+    /// </summary>
     public FileIntegrity Integrity { get => fileIntegrity; set => fileIntegrity = value; }
 
+    /// <summary>
+    /// Algorithm to compress the file (default None).
+    /// </summary>
     public FileCompression Compression { get => fileCompression; set => fileCompression = value; }
 
+    /// <summary>
+    /// Algorithm to encrypt the file.
+    /// </summary>
     public FileEncryption Encryption { get => fileEncryption; set => fileEncryption = value; }
 
+    /// <summary>
+    /// Any operation in progress?
+    /// </summary>
     public bool Busy => cancellationSource != null;
 
     [Title("Streams")]
@@ -111,11 +126,11 @@ namespace FronkonGames.GameWork.Modules.LocalData
     }
 
     /// <summary>
-    /// 
+    /// All files in the working path.
     /// </summary>
-    /// <param name="searchPattern"></param>
-    /// <param name="recursive"></param>
-    /// <returns></returns>
+    /// <param name="searchPattern">Search pattern.</param>
+    /// <param name="recursive">Recursive search.</param>
+    /// <returns>List with information on each file.</returns>
     public List<FileInfo> GetFilesInfo(string searchPattern = "*.*", bool recursive = false)
     {
       List<FileInfo> files = new();
@@ -138,67 +153,67 @@ namespace FronkonGames.GameWork.Modules.LocalData
     }
 
     /// <summary>
-    /// 
+    /// Information about a file in the working directory.
     /// </summary>
-    /// <param name="searchPattern"></param>
-    /// <param name="recursive"></param>
-    /// <returns></returns>
-    public FileInfo GetFileInfo(string file)
+    /// <param name="fileName">File name.</param>
+    /// <returns>File information or null if it does not exist.</returns>
+    public FileInfo GetFileInfo(string fileName)
     {
-      Check.IsNotNullOrEmpty(file);
+      Check.IsNotNullOrEmpty(fileName);
       FileInfo fileInfo = null;
 
       try
       {
-        fileInfo = new FileInfo(Path + file); 
+        fileInfo = new FileInfo(Path + fileName); 
       }
       catch (Exception e)
       {
         Log.Exception(e.ToString());
       }
 
-      return fileInfo.Exists == true ? fileInfo : null;
+      return fileInfo.Exists ? fileInfo : null;
     }
 
     /// <summary>
-    /// 
+    /// Does the file exist in the working directory?
     /// </summary>
-    /// <param name="slot"></param>
-    /// <returns></returns>
-    public bool Exists(string file)
+    /// <param name="fileName">File name.</param>
+    /// <returns>True / false.</returns>
+    public bool Exists(string fileName)
     {
-      Check.IsNotNullOrEmpty(file);
-      bool success = false;
+      Check.IsNotNullOrEmpty(fileName);
+      bool exists = false;
 
       try
       {
-        if (new FileInfo(Path + file).Exists == true)
-          success = true;
+        if (new FileInfo(Path + fileName).Exists == true)
+          exists = true;
       }
       catch (Exception e)
       {
         Log.Exception(e.ToString());
       }
 
-      return success;
+      return exists;
     }
 
     /// <summary>
-    /// 
+    /// Returns the following name for a file that is available, appending three digits if necessary.
     /// </summary>
-    /// <param name="file"></param>
-    /// <returns></returns>
-    public string NextAvailableName(string file, string separator = "")
+    /// <param name="fileName">File name.</param>
+    /// <param name="separator">Separator between name and digits.</param>
+    /// <returns>File name.</returns>
+    public string NextAvailableName(string fileName, string separator = "")
     {
-      string availableName = file;
+      string availableName = fileName;
 
       int index = 0;
       try
       {
         while (Exists(availableName) == true && index < 1000)
         {
-          string name = System.IO.Path.GetFileNameWithoutExtension(file);
-          string extension = System.IO.Path.GetExtension(file);
+          string name = System.IO.Path.GetFileNameWithoutExtension(fileName);
+          string extension = System.IO.Path.GetExtension(fileName);
           
           availableName = $"{name}{separator}{index:000}{extension}"; 
           index++;
@@ -210,26 +225,29 @@ namespace FronkonGames.GameWork.Modules.LocalData
       }
       
       if (index == 1000)
-        Log.Error($"Index limit reached for file '{file}'");
+        Log.Error($"Index limit reached for file '{fileName}'");
 
       return availableName;
     }
 
+    /// <summary>
+    /// If it exists, cancels the current file operation.
+    /// </summary>
     public void Cancel() => cancellationSource?.Cancel(); 
 
     /// <summary>
-    /// 
+    /// Deletes a file from the working path.
     /// </summary>
-    /// <param name="file"></param>
-    public void Delete(string file)
+    /// <param name="fileName"></param>
+    public void Delete(string fileName)
     {
-      Check.IsNotNullOrEmpty(file);
+      Check.IsNotNullOrEmpty(fileName);
 
-      if (Exists(file) == true)
+      if (Exists(fileName) == true)
       {
         try
         {
-          File.Delete(Path + file);
+          File.Delete(Path + fileName);
         }
         catch (Exception e)
         {
@@ -237,7 +255,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
         }
       }
       else
-        Log.Warning($"File '{file}' not found");
+        Log.Warning($"File '{fileName}' not found");
     }
 
     private IIntegrity CreateFileIntegrity(FileIntegrity fileIntegrity, CancellationToken cancellationToken)

@@ -21,10 +21,16 @@ using System.Threading.Tasks;
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
-  /// .
+  /// It does not make any kind of compression.
   /// </summary>
   public sealed class NullCompressor : ICompressor
   {
+    /// <summary>
+    /// Compresses a stream.
+    /// </summary>
+    /// <param name="stream">Memory stream.</param>
+    /// <param name="progress">Progress of the compression, from 0 to 1.</param>
+    /// <returns>Same stream.</returns>
     public Task<MemoryStream> Compress(MemoryStream stream, Action<float> progress = null)
     {
       progress?.Invoke(0.0f);
@@ -32,6 +38,12 @@ namespace FronkonGames.GameWork.Modules.LocalData
       return Task.FromResult(stream);
     }
 
+    /// <summary>
+    /// Compresses a stream.
+    /// </summary>
+    /// <param name="stream">Memory stream.</param>
+    /// <param name="progress">Progress of the compression, from 0 to 1.</param>
+    /// <returns>Same stream.</returns>
     public Task<MemoryStream> Decompress(MemoryStream stream, int originalSize, Action<float> progress = null)
     {
       progress?.Invoke(0.0f);

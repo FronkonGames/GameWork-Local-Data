@@ -18,7 +18,7 @@
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
-  /// .
+  /// Compression algorithms supported.
   /// </summary>
   public enum FileCompression
   {

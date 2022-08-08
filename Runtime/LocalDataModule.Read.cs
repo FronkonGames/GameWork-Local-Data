@@ -26,23 +26,23 @@ using FronkonGames.GameWork.Foundation;
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
-  /// .
+  /// Module for asynchronous reading / writing of local files.
   /// </summary>
   public sealed partial class LocalDataModule : MonoBehaviourModule,
                                                 IInitializable
   {
-  
     /// <summary>
-    /// 
+    /// Reads a file asynchronously.
     /// </summary>
-    /// <param name="slot"></param>
-    /// <typeparam name="T"></typeparam>
-    /// <returns></returns>
-    public async Task Read<T>(string file,
+    /// <param name="fileName">File name.</param>
+    /// <param name="onProgress">Progress of the operation, from 0 to 1.</param>
+    /// <param name="onEnd">Result of the operation, with a code and the object (if the operation was successful).</param>
+    /// <typeparam name="T">Object if the operation was a success.</typeparam>
+    public async Task Read<T>(string fileName,
                               Action<float> onProgress = null,
                               Action<FileResult, T> onEnd = null) where T : LocalData
     {
-      Check.IsNotNullOrEmpty(file);
+      Check.IsNotNullOrEmpty(fileName);
       Check.GreaterOrEqual(bufferSize, 4);
 
       FileResult result = FileResult.Ok;
@@ -56,12 +56,12 @@ namespace FronkonGames.GameWork.Modules.LocalData
       
       try
       {
-        FileInfo fileInfo = GetFileInfo(file);
+        FileInfo fileInfo = GetFileInfo(fileName);
         if (fileInfo != null)
         {
           byte[] buffer = new byte[bufferSize * 1024];
 
-          await using FileStream fileStream = new(Path + file, FileMode.Open, FileAccess.Read, FileShare.Read);
+          await using FileStream fileStream = new(Path + fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
           using BinaryReader binaryReader = new(fileStream);
 
           string fileSignature = binaryReader.ReadString();
@@ -133,16 +133,16 @@ namespace FronkonGames.GameWork.Modules.LocalData
             result = data.Signature.Equals(fileSignature) ? FileResult.Ok : FileResult.InvalidSignature;
           }
           else
-            Log.Warning($"File '{file}' integrity fails");
+            Log.Warning($"File '{fileName}' integrity fails");
         }
         else
-          Log.Error($"File '{Path}{file}' not found");
+          Log.Error($"File '{Path}{fileName}' not found");
       }
       catch (OperationCanceledException)
       {
         result = FileResult.Cancelled;
 
-        Log.Info($"File '{file}' reading canceled.");
+        Log.Info($"File '{fileName}' reading canceled.");
       }
       catch (Exception e)
       {

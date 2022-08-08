@@ -25,25 +25,26 @@ using FronkonGames.GameWork.Foundation;
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
-  /// .
+  /// Module for asynchronous reading / writing of local files.
   /// </summary>
   public sealed partial class LocalDataModule : MonoBehaviourModule,
                                                 IInitializable
   {
     /// <summary>
-    /// 
+    /// Asynchronous file writing.
     /// </summary>
-    /// <param name="localData"></param>
-    /// <param name="file"></param>
-    /// <param name="onProgress"></param>
-    /// <param name="onEnd"></param>
-    /// <typeparam name="T"></typeparam>
-    public async void Write<T>(T localData, string file,
+    /// <param name="localData">Object to be serialised.</param>
+    /// <param name="fileName">File name.</param>
+    /// <param name="onProgress">Progress of the operation, from 0 to 1.</param>
+    /// <param name="onEnd">Result of the operation.</param>
+    /// <typeparam name="T">ILocalData</typeparam>
+    public async void Write<T>(T localData,
+                               string fileName,
                                Action<float> onProgress = null,
-                               Action<FileResult, T> onEnd = null) where T : ILocalData
+                               Action<FileResult> onEnd = null) where T : ILocalData
     {
       Check.IsNotNull(localData);
-      Check.IsNotNullOrEmpty(file);
+      Check.IsNotNullOrEmpty(fileName);
       Check.GreaterOrEqual(bufferSize, 4);
 
       FileResult result = FileResult.Ok;
@@ -56,10 +57,10 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
       try
       {
-        string fileName = Path + file;
-        if (CheckPath(fileName) == true)
+        string pathFileName = Path + fileName;
+        if (CheckPath(pathFileName) == true)
         {
-          await using FileStream fileStream = new(fileName, FileMode.Create, FileAccess.Write, FileShare.None);
+          await using FileStream fileStream = new(pathFileName, FileMode.Create, FileAccess.Write, FileShare.None);
           await using BinaryWriter writer = new(fileStream);
 
           // Signature         : string.
@@ -141,10 +142,10 @@ namespace FronkonGames.GameWork.Modules.LocalData
       {
         result = FileResult.Cancelled;
 
-        if (Exists(file) == true)
-          Delete(file);
+        if (Exists(fileName) == true)
+          Delete(fileName);
 
-        Log.Info($"File '{file}' writing canceled.");
+        Log.Info($"File '{fileName}' writing canceled.");
       }
       catch (Exception e)
       {
@@ -162,7 +163,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
         onProgress?.Invoke(1.0f);
         
-        onEnd?.Invoke(result, localData);
+        onEnd?.Invoke(result);
       }
     }
   }

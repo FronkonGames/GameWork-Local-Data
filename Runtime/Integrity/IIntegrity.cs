@@ -21,12 +21,25 @@ using System.Threading.Tasks;
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
-  /// .
+  /// File integrity calculation interface.
   /// </summary>
   public interface IIntegrity
   {
+    /// <summary>
+    /// Calculation of the integrity of a stream.
+    /// </summary>
+    /// <param name="stream">Memory stream.</param>
+    /// <param name="progress">Progress of the calculation, from 0 to 1.</param>
+    /// <returns>Hash.</returns>
     public Task<string> Calculate(MemoryStream stream, Action<float> progress = null);
     
+    /// <summary>
+    /// Checks the integrity of a stream.
+    /// </summary>
+    /// <param name="stream">Memory stream to check.</param>
+    /// <param name="hash">Hash.</param>
+    /// <param name="progress">Progress of the calculation, from 0 to 1.</param>
+    /// <returns>True if the integrity of the stream is correct.</returns>
     public Task<bool> Check(MemoryStream stream, string hash, Action<float> progress = null);
   }
 }

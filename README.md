@@ -21,6 +21,8 @@
 - [Game:Work Foundation](https://github.com/FronkonGames/GameWork-Foundation).
 - Test Framework 1.1.31 or higher.
 
+## 🔧 Use
+
 ## 🚀 Installation
 
 ### Editing your 'manifest.json'

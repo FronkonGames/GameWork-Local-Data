@@ -18,12 +18,12 @@
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
-  /// .
+  /// Interface for local data file.
   /// </summary>
   public interface ILocalData
   {
     /// <summary>
-    /// 
+    /// Signature.
     /// </summary>
     public string Signature { get; }
   }

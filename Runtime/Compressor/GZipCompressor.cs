@@ -21,10 +21,16 @@ using System.Threading;
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
-  /// .
+  /// GZip compressor.
   /// </summary>
   public sealed class GZipCompressor : CompressorBase
   {
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="bufferSize">Buffer size, in kB.</param>
+    /// <param name="compressionLevel">Compression level.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     public GZipCompressor(int bufferSize, CompressionLevel compressionLevel, CancellationToken cancellationToken)
       : base(bufferSize, compressionLevel, cancellationToken)
     {

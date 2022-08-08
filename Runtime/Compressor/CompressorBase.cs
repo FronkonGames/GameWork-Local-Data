@@ -24,7 +24,7 @@ using FronkonGames.GameWork.Foundation;
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
-  /// .
+  /// File compression / decompression base.
   /// </summary>
   public abstract class CompressorBase : ICompressor
   {
@@ -44,10 +44,12 @@ namespace FronkonGames.GameWork.Modules.LocalData
       this.cancellationToken = cancellationToken;
     }
 
-    protected abstract Stream CreateCompressorStream(MemoryStream stream);
-
-    protected abstract Stream CreateDecompressorStream(MemoryStream stream);
-
+    /// <summary>
+    /// Compresses a stream.
+    /// </summary>
+    /// <param name="stream">Memory stream.</param>
+    /// <param name="progress">Progress of the compression, from 0 to 1.</param>
+    /// <returns>Compressed stream.</returns>
     public async Task<MemoryStream> Compress(MemoryStream stream, Action<float> progress = null)
     {
       Check.IsNotNull(stream);
@@ -77,6 +79,13 @@ namespace FronkonGames.GameWork.Modules.LocalData
       return outStream;
     }
 
+    /// <summary>
+    /// Descompresses a stream.
+    /// </summary>
+    /// <param name="stream">Compressed memory stream.</param>
+    /// <param name="originalSize">Size of the uncompressed stream.</param>
+    /// <param name="progress">Progress of the decompression, from 0 to 1.</param>
+    /// <returns>Decompressed stream.</returns>
     public async Task<MemoryStream> Decompress(MemoryStream stream, int originalSize, Action<float> progress = null)
     {
       Check.IsNotNull(stream);
@@ -106,5 +115,9 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
       return outStream;
     }
+
+    protected abstract Stream CreateCompressorStream(MemoryStream stream);
+
+    protected abstract Stream CreateDecompressorStream(MemoryStream stream);
   }
 }

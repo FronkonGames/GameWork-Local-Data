@@ -18,7 +18,7 @@
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
-  /// .
+  /// Encryption algorithms supported.
   /// </summary>
   public enum FileEncryption
   {

@@ -18,7 +18,7 @@
 namespace FronkonGames.GameWork.Modules.LocalData
 {
   /// <summary>
-  /// .
+  /// Types of algorithms supported for calculating data integrity.
   /// </summary>
   public enum FileIntegrity
   {
