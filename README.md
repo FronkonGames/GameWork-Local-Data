@@ -24,7 +24,7 @@ features:
 🧬 Integrity check using MD5, SHA-1, SHA-256 or SHA-512 algorithms.<br>
 🗜️ Compression / decompression using algorithms: GZip, Zip or Brotli.<br>
 🔒 Encryption / decryption using algorithms: AES, DES, RC2, DES or TripleDES.<br>
-👌 Supports typical Unity data such as: Vector, Quaternion, Colour, etc.
+👌 Supports typical Unity data such as: Vector, Quaternion, Color, etc.
 
 ## Requisites 🔧
 
@@ -56,7 +56,43 @@ features:
 
 ## Use 🚀
 
-TODO.
+Create a class inheriting from ILocalData:
+
+```c#
+[Serializable]
+public class MyLocalData : ILocalData
+{
+  public string Signature => "MySignature";
+  
+  public string playerName = "Guybrush Threepwood";
+  
+  public Vector3 position = new(0.0f, -10.0f, 0.0f);
+}
+```
+
+To serialize it in the file '_Guy.brush_':
+
+```c#
+localDataModule.Write(myLocalData, "Guy.brush", null, (result) =>
+{
+  if (result == FileResult.Ok)
+    Debug.Log("Guybrush Threepwood saved!");
+  else
+    Debug.Error($"{result} writing 'Guy.brush'.");
+});
+```
+
+To deserialise the file '_Guy.brush_' into an object:
+
+```c#
+localDataModule.Read<MyLocalData>("Guy.brush", null, (result, file) =>
+{
+  if (result == FileResult.Ok)
+    myLocalData = file;
+  else
+    Debug.Error($"{result} reading 'Guy.brush'.");
+});
+```
 
 ## License 📜
 

@@ -38,9 +38,9 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// <param name="fileName">File name.</param>
     /// <param name="onEnd">Result of the operation.</param>
     /// <typeparam name="T">ILocalData</typeparam>
-    public async void Write<T>(T data, string fileName, Action<FileResult> onEnd = null) where T : ILocalData =>
+    public async Task Write<T>(T data, string fileName, Action<FileResult> onEnd = null) where T : ILocalData =>
       await Write<T>(data, fileName, null, onEnd);
-    
+
     /// <summary>
     /// Asynchronous file writing.
     /// </summary>
