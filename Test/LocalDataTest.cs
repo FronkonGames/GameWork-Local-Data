@@ -17,7 +17,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using UnityEngine;
 using FronkonGames.GameWork.Foundation;
 using FronkonGames.GameWork.Core;
@@ -87,7 +86,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
     private List<FileInfo> files = new List<FileInfo>();
     private int fileSelected = -1;
-    private TestData testData = null;
+    private TestData test = null;
 
     private FileResult lastFileresult = FileResult.Ok;
 
@@ -143,7 +142,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
                     if (GUILayout.Button(files[i].Name, FontStyle) == true)
                     {
                       fileSelected = i;
-                      testData = null;
+                      test = null;
 
                       localData.Read<TestData>(files[i].Name,
                         progress => statusLabel = $"READING {(progress * 100.0f):00}%",
@@ -151,7 +150,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
                         {
                           lastFileresult = result;
                           statusLabel = "NO ACTIVE FILE OPERATIONS";
-                          testData = file;
+                          test = file;
                         });
                     }
                     
@@ -305,16 +304,23 @@ namespace FronkonGames.GameWork.Modules.LocalData
             {
               if (lastFileresult == FileResult.Ok)
               {
-                if (fileSelected != -1 && testData != null)
+                if (fileSelected != -1 && test != null)
                 {
-                  GUILayout.Label($"File '{files[fileSelected].Name}' ({testData.data.Length.BytesToHumanReadable()})", FontStyle);
+                  GUILayout.Label($"File '{files[fileSelected].Name}' ({test.data.Length.BytesToHumanReadable()})", FontStyle);
               
                   GUILayout.BeginVertical("box", GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
                   {
-                    GUILayout.Label($"Message: {testData.message}");
-                  
-                    string hex = BitConverter.ToString(testData.data[..Math.Min(testData.data.Length, 500)]).Replace("-","");
-                    GUILayout.TextArea(testData.data.Length <= 500 ? hex : hex + "...");
+                    GUILayout.Label($"Bool:{test.boolValue} Byte:{test.byteValue} SByte:{test.sbyteValue} Short:{test.shortValue} UShort:{test.ushortValue} " +
+                                    $"Int:{test.intValue} UInt:{test.uintValue} Long:{test.longValue} ULong:{test.ulongValue} " +
+                                    $"Float:{test.floatValue:0.00} Double:{test.doubleValue:0.00} Decimal:{test.decimalValue:0:00}");
+
+                    GUILayout.Label($"DateTime:'{test.dateTimeValue}' String:'{test.stringValue}' Char:'{test.charValue}'" +
+                                    $"Struct:'{test.structData.stringValue}' Class:'{test.classData.stringValue}'");
+
+                    GUILayout.Label($"List size:'{test.listValue.Count}' Dictionary size:'{test.dictValue.Count}'");
+                    
+                    string hex = BitConverter.ToString(test.data[..Math.Min(test.data.Length, 300)]).Replace("-","");
+                    GUILayout.TextArea(test.data.Length <= 300 ? hex : hex + "...");
                   }
                   GUILayout.EndVertical();
                 }

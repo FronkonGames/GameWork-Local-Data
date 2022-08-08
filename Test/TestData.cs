@@ -15,18 +15,61 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 using System;
+using System.Collections.Generic;
 using FronkonGames.GameWork.Foundation;
+using UnityEngine;
 using Random = UnityEngine.Random;
 
 namespace FronkonGames.GameWork.Modules.LocalData
 {
+  [Serializable]
+  public struct StructData
+  {
+    public string stringValue;
+  }
+
+  [Serializable]
+  public class ClassData
+  {
+    public string stringValue;
+  }
+
   /// <summary>
   /// Test file.
   /// </summary>
   [Serializable]
   public sealed class TestData : LocalData
   {
-    public string message;
+    public bool boolValue;
+
+    public byte byteValue;
+    public sbyte sbyteValue;
+
+    public char charValue;
+
+    public string stringValue;
+
+    public short shortValue;
+    public ushort ushortValue;
+
+    public int intValue;
+    public uint uintValue;
+
+    public long longValue;
+    public ulong ulongValue;
+
+    public float floatValue;
+    public double doubleValue;
+    public decimal decimalValue;
+
+    public DateTime dateTimeValue;
+
+    public StructData structData;
+    public ClassData classData;
+
+    public List<int> listValue;
+
+    public Dictionary<int, string> dictValue;
 
     public byte[] data;
 
@@ -34,7 +77,39 @@ namespace FronkonGames.GameWork.Modules.LocalData
     {
       Check.Greater(size, 0);
 
-      message = "All your base are belong to us!";
+      boolValue = true;
+      byteValue = 42;
+      sbyteValue = -42;
+      charValue = 'A';
+      stringValue = "All your base are belong to us!";
+      shortValue = -42;
+      ushortValue = 42;
+      intValue = -42;
+      uintValue = 42;
+      longValue = -42;
+      ulongValue = 42;
+      floatValue = Mathf.PI;
+      doubleValue = Math.PI;
+      decimalValue = (decimal)Math.E;
+      dateTimeValue = DateTime.Now;
+
+      structData = new StructData { stringValue = "This is a structure." };
+      classData = new ClassData { stringValue = "This is a class." };
+
+      listValue = new List<int> { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+      dictValue = new Dictionary<int, string>
+      {
+        { 0, "Zero" },
+        { 1, "One" },
+        { 2, "Two" },
+        { 3, "Three" },
+        { 4, "Four" },
+        { 5, "Five" },
+        { 6, "Six" },
+        { 7, "Seven" },
+        { 8, "Eight" },
+        { 9, "Nine" },
+      };
 
       data = new byte[size];
       bool random = false;
