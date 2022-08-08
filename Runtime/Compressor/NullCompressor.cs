@@ -31,7 +31,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// <param name="stream">Memory stream.</param>
     /// <param name="progress">Progress of the compression, from 0 to 1.</param>
     /// <returns>Same stream.</returns>
-    public Task<MemoryStream> Compress(MemoryStream stream, Action<float> progress = null)
+    public Task<MemoryStream> Compress(MemoryStream stream, Action<float> progress)
     {
       progress?.Invoke(0.0f);
       
@@ -44,7 +44,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// <param name="stream">Memory stream.</param>
     /// <param name="progress">Progress of the compression, from 0 to 1.</param>
     /// <returns>Same stream.</returns>
-    public Task<MemoryStream> Decompress(MemoryStream stream, int originalSize, Action<float> progress = null)
+    public Task<MemoryStream> Decompress(MemoryStream stream, int originalSize, Action<float> progress)
     {
       progress?.Invoke(0.0f);
       
