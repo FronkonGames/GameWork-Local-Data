@@ -31,7 +31,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// <param name="stream">Memory stream.</param>
     /// <param name="progress">Progress of the encryption, from 0 to 1.</param>
     /// <returns>Encrypted stream.</returns>
-    public Task<MemoryStream> Encrypt(MemoryStream stream, Action<float> progress = null);
+    public Task<MemoryStream> Encrypt(MemoryStream stream, Action<float> progress);
 
     /// <summary>
     /// Stream decryption.
@@ -39,6 +39,6 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// <param name="stream">Encrypted memory stream.</param>
     /// <param name="progress">Progress of the decryption, from 0 to 1.</param>
     /// <returns>Decrypted stream.</returns>
-    public Task<MemoryStream> Decrypt(MemoryStream stream, Action<float> progress = null);
+    public Task<MemoryStream> Decrypt(MemoryStream stream, Action<float> progress);
   }
 }

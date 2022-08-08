@@ -12,25 +12,26 @@
   <a style="text-decoration:none">
     <img src="https://img.shields.io/github/languages/top/FronkonGames/GameWork-Local-Data?style=flat-square" alt="top language" />
   </a>
+  <a style="text-decoration:none">
+    <img src="https://img.shields.io/codacy/grade/f124de6116ed47099d017f8ae6011e26?style=flat-square" alt="code quality" />
+  </a>
 </p>
 
-## 🔧 Requisites
+## Requisites 🔧
 
-- Unity 2020.3 or higher.
-- [Game:Work Core](https://github.com/FronkonGames/GameWork-Core).
-- [Game:Work Foundation](https://github.com/FronkonGames/GameWork-Foundation).
-- Test Framework 1.1.31 or higher.
+  - Unity 2020.3 or higher.
+  - [Game:Work Core](https://github.com/FronkonGames/GameWork-Core).
+  - [Game:Work Foundation](https://github.com/FronkonGames/GameWork-Foundation).
+  - Test Framework 1.1.31 or higher.
 
-## 🔧 Use
-
-## 🚀 Installation
+## Installation ⚙️
 
 ### Editing your 'manifest.json'
 
-- Open the manifest.json file of your Unity project.
-- In the section "dependencies" add:
+  - Open the manifest.json file of your Unity project.
+  - In the section "dependencies" add:
 
-```
+```c#
 {
   ...
   "dependencies":
@@ -44,6 +45,8 @@
 }
 ```
 
-## 📜 License
+## Use 🚀
+
+## License 📜
 
 Code released under [MIT License](https://github.com/FronkonGames/GameWork-Scene-Module/blob/main/LICENSE).

@@ -31,7 +31,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// <param name="stream">Memory stream.</param>
     /// <param name="progress">Progress of the calculation, from 0 to 1.</param>
     /// <returns>Hash.</returns>
-    public Task<string> Calculate(MemoryStream stream, Action<float> progress = null);
+    public Task<string> Calculate(MemoryStream stream, Action<float> progress);
     
     /// <summary>
     /// Checks the integrity of a stream.
@@ -40,6 +40,6 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// <param name="hash">Hash.</param>
     /// <param name="progress">Progress of the calculation, from 0 to 1.</param>
     /// <returns>True if the integrity of the stream is correct.</returns>
-    public Task<bool> Check(MemoryStream stream, string hash, Action<float> progress = null);
+    public Task<bool> Check(MemoryStream stream, string hash, Action<float> progress);
   }
 }

@@ -97,7 +97,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
     private Action<float> clientProgress;
     private float currentProgress;
-    private int totalSteps = 0;
+    private int totalSteps;
     private int currentStep;
 
     /// <summary>

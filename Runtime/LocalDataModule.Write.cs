@@ -19,6 +19,7 @@ using System;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading;
+using System.Threading.Tasks;
 using FronkonGames.GameWork.Core;
 using FronkonGames.GameWork.Foundation;
 
@@ -33,17 +34,24 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// <summary>
     /// Asynchronous file writing.
     /// </summary>
-    /// <param name="localData">Object to be serialised.</param>
+    /// <param name="data">Object to be serialised.</param>
+    /// <param name="fileName">File name.</param>
+    /// <param name="onEnd">Result of the operation.</param>
+    /// <typeparam name="T">ILocalData</typeparam>
+    public async void Write<T>(T data, string fileName, Action<FileResult> onEnd = null) where T : ILocalData =>
+      await Write<T>(data, fileName, null, onEnd);
+    
+    /// <summary>
+    /// Asynchronous file writing.
+    /// </summary>
+    /// <param name="data">Object to be serialised.</param>
     /// <param name="fileName">File name.</param>
     /// <param name="onProgress">Progress of the operation, from 0 to 1.</param>
     /// <param name="onEnd">Result of the operation.</param>
     /// <typeparam name="T">ILocalData</typeparam>
-    public async void Write<T>(T localData,
-                               string fileName,
-                               Action<float> onProgress = null,
-                               Action<FileResult> onEnd = null) where T : ILocalData
+    public async Task Write<T>(T data, string fileName, Action<float> onProgress, Action<FileResult> onEnd) where T : ILocalData
     {
-      Check.IsNotNull(localData);
+      Check.IsNotNull(data);
       Check.IsNotNullOrEmpty(fileName);
       Check.GreaterOrEqual(bufferSize, 4);
 
@@ -71,7 +79,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
           // Uncompressed size : int.
           // Data              : byte[].
           
-          writer.Write(localData.Signature);
+          writer.Write(data.Signature);
           writer.Write((byte)fileIntegrity);
           writer.Write((byte)fileCompression);
           writer.Write((byte)fileEncryption);
@@ -91,7 +99,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
             BinaryFormatter binaryFormatter = new();
             AddSerializationSurrogates(binaryFormatter);
 
-            binaryFormatter.Serialize(stream, localData);
+            binaryFormatter.Serialize(stream, data);
           }
 
           int uncompressedSize = (int)stream.Length;
@@ -128,14 +136,14 @@ namespace FronkonGames.GameWork.Modules.LocalData
           using (Profiling.Time($"Writing {fileName} data"))
 #endif
           {
-            byte[] data = stream.ToArray();
-            for (int offset = 0; offset < data.Length; )
+            byte[] bytes = stream.ToArray();
+            for (int offset = 0; offset < bytes.Length; )
             {
-              int length = Math.Min(bufferSize * 1024, data.Length - offset);
-              await fileStream.WriteAsync(data, offset, length, cancellationToken);
+              int length = Math.Min(bufferSize * 1024, bytes.Length - offset);
+              await fileStream.WriteAsync(bytes, offset, length, cancellationToken);
               offset += length;
 
-              CalculateProgress((float)offset / data.Length);
+              CalculateProgress((float)offset / bytes.Length);
             }
           }
         }

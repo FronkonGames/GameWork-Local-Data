@@ -81,14 +81,14 @@ namespace FronkonGames.GameWork.Modules.LocalData
     private string statusLabel = "NO ACTIVE FILE OPERATIONS";
 
     private int kilobytes = 10;
-    private int megabytes = 0;
+    private int megabytes;
     private float randomness = 0.5f;
 
-    private List<FileInfo> files = new List<FileInfo>();
+    private List<FileInfo> files = new();
     private int fileSelected = -1;
-    private TestData test = null;
+    private TestData test;
 
-    private FileResult lastFileresult = FileResult.Ok;
+    private FileResult lastFileResult = FileResult.Ok;
 
     /// <summary>
     /// On initialize.
@@ -148,7 +148,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
                         progress => statusLabel = $"READING {(progress * 100.0f):00}%",
                         (result, file) =>
                         {
-                          lastFileresult = result;
+                          lastFileResult = result;
                           statusLabel = "NO ACTIVE FILE OPERATIONS";
                           test = file;
                         });
@@ -259,7 +259,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
                     progress => statusLabel = $"WRITING {(progress * 100.0f):00}%",
                     (result) =>
                     {
-                      lastFileresult = result;
+                      lastFileResult = result;
                       files = localData.GetFilesInfo();
                       statusLabel = "NO ACTIVE FILE OPERATIONS";
                     });
@@ -302,12 +302,12 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
             GUILayout.BeginVertical(BoxStyle, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
             {
-              if (lastFileresult == FileResult.Ok)
+              if (lastFileResult == FileResult.Ok)
               {
                 if (fileSelected != -1 && test != null)
                 {
                   GUILayout.Label($"File '{files[fileSelected].Name}' ({test.data.Length.BytesToHumanReadable()})", FontStyle);
-              
+
                   GUILayout.BeginVertical("box", GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
                   {
                     GUILayout.Label($"Bool:{test.boolValue} Byte:{test.byteValue} SByte:{test.sbyteValue} Short:{test.shortValue} UShort:{test.ushortValue} " +
@@ -325,8 +325,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
                   GUILayout.EndVertical();
                 }
               }
-              else if (lastFileresult != FileResult.Cancelled)
-                GUILayout.Label($"<color=red>Error: {lastFileresult.ToString().FromCamelCase()}</color>", FontStyle);
+              else if (lastFileResult != FileResult.Cancelled)
+                GUILayout.Label($"<color=red>Error: {lastFileResult.ToString().FromCamelCase()}</color>", FontStyle);
               
               GUILayout.FlexibleSpace();
             }

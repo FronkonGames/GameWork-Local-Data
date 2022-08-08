@@ -37,7 +37,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// <param name="stream">Memory stream.</param>
     /// <param name="progress">Progress of the calculation, from 0 to 1.</param>
     /// <returns>Hash.</returns>
-    public async Task<string> Calculate(MemoryStream stream, Action<float> progress = null)
+    public async Task<string> Calculate(MemoryStream stream, Action<float> progress)
     {
       stream.Position = 0;
       
@@ -70,7 +70,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// <param name="hash">Hash.</param>
     /// <param name="progress">Progress of the calculation, from 0 to 1.</param>
     /// <returns>True if the integrity of the stream is correct.</returns>
-    public async Task<bool> Check(MemoryStream stream, string hash, Action<float> progress = null)
+    public async Task<bool> Check(MemoryStream stream, string hash, Action<float> progress)
     {
       string streamHash = await Calculate(stream, progress);
 

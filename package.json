@@ -1,6 +1,6 @@
 {
   "name": "com.frokongames.gamework.modules.localdata",
-  "version": "0.1.0",
+  "version": "0.9.0",
   "displayName": "Game:Work Local Data",
   "decription": "Async load/save local data with compression, encryption and integrity check.",
   "references": [ ],

@@ -35,12 +35,19 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// Reads a file asynchronously.
     /// </summary>
     /// <param name="fileName">File name.</param>
+    /// <param name="onEnd">Result of the operation, with a code and the object (if the operation was successful).</param>
+    /// <typeparam name="T">Object if the operation was a success.</typeparam>
+    public async Task Read<T>(string fileName, Action<FileResult, T> onEnd = null) where T : LocalData =>
+      await Read<T>(fileName, null, onEnd);
+    
+    /// <summary>
+    /// Reads a file asynchronously.
+    /// </summary>
+    /// <param name="fileName">File name.</param>
     /// <param name="onProgress">Progress of the operation, from 0 to 1.</param>
     /// <param name="onEnd">Result of the operation, with a code and the object (if the operation was successful).</param>
     /// <typeparam name="T">Object if the operation was a success.</typeparam>
-    public async Task Read<T>(string fileName,
-                              Action<float> onProgress = null,
-                              Action<FileResult, T> onEnd = null) where T : LocalData
+    public async Task Read<T>(string fileName, Action<float> onProgress, Action<FileResult, T> onEnd) where T : LocalData
     {
       Check.IsNotNullOrEmpty(fileName);
       Check.GreaterOrEqual(bufferSize, 4);
