@@ -191,25 +191,27 @@ namespace FronkonGames.GameWork.Modules.LocalData
 
               GUILayout.Space(margin);
               
+              const float labelWidth = 80.0f;
+              
               GUILayout.BeginVertical("box");
               {
                 GUILayout.BeginHorizontal();
                 {
-                  GUILayout.Label("Integrity", GUILayout.Width(75.0f));
+                  GUILayout.Label("Integrity", GUILayout.Width(labelWidth));
                   Integrity = (FileIntegrity)GUILayout.SelectionGrid((int)Integrity, Enum.GetNames(typeof(FileIntegrity)), Enum.GetNames(typeof(FileIntegrity)).Length);
                 }
                 GUILayout.EndHorizontal();
 
                 GUILayout.BeginHorizontal();
                 {
-                  GUILayout.Label("Compression", GUILayout.Width(75.0f));
+                  GUILayout.Label("Compression", GUILayout.Width(labelWidth));
                   Compression = (FileCompression)GUILayout.SelectionGrid((int)Compression, Enum.GetNames(typeof(FileCompression)), Enum.GetNames(typeof(FileCompression)).Length);
                 }
                 GUILayout.EndHorizontal();
 
                 GUILayout.BeginHorizontal();
                 {
-                  GUILayout.Label("Encryption", GUILayout.Width(75.0f));
+                  GUILayout.Label("Encryption", GUILayout.Width(labelWidth));
                   Encryption = (FileEncryption)GUILayout.SelectionGrid((int)Encryption, Enum.GetNames(typeof(FileEncryption)), Enum.GetNames(typeof(FileEncryption)).Length);
                 }
                 GUILayout.EndHorizontal();
@@ -217,8 +219,6 @@ namespace FronkonGames.GameWork.Modules.LocalData
               GUILayout.EndVertical();
 
               GUILayout.Space(margin);
-
-              const float labelWidth = 75.0f;
 
               GUILayout.BeginVertical("box");
               {
@@ -312,15 +312,15 @@ namespace FronkonGames.GameWork.Modules.LocalData
                   {
                     GUILayout.Label($"Bool:{test.boolValue} Byte:{test.byteValue} SByte:{test.sbyteValue} Short:{test.shortValue} UShort:{test.ushortValue} " +
                                     $"Int:{test.intValue} UInt:{test.uintValue} Long:{test.longValue} ULong:{test.ulongValue} " +
-                                    $"Float:{test.floatValue:0.00} Double:{test.doubleValue:0.00} Decimal:{test.decimalValue:0:00}");
+                                    $"Float:{test.floatValue:0.00} Double:{test.doubleValue:0.00} Decimal:{test.decimalValue:0:00} DateTime:'{test.dateTimeValue}'");
 
-                    GUILayout.Label($"DateTime:'{test.dateTimeValue}' String:'{test.stringValue}' Char:'{test.charValue}'" +
-                                    $"Struct:'{test.structData.stringValue}' Class:'{test.classData.stringValue}'");
+                    GUILayout.Label($"String:'{test.stringValue}' Char:'{test.charValue}' Struct:'{test.structData.stringValue}' Class:'{test.classData.stringValue}" +
+                                    $"List size:{test.listValue.Count} Dictionary size:{test.dictValue.Count}");
 
-                    GUILayout.Label($"List size:'{test.listValue.Count}' Dictionary size:'{test.dictValue.Count}'");
+                    GUILayout.Label($"Vector2:{test.vector2} Vector3:{test.vector3} Vector4:{test.vector4} Color:{test.color}");
                     
-                    string hex = BitConverter.ToString(test.data[..Math.Min(test.data.Length, 300)]).Replace("-","");
-                    GUILayout.TextArea(test.data.Length <= 300 ? hex : hex + "...");
+                    string hex = BitConverter.ToString(test.data[..Math.Min(test.data.Length, 600)]).Replace("-","");
+                    GUILayout.TextArea(test.data.Length <= 600 ? hex : hex + "...");
                   }
                   GUILayout.EndVertical();
                 }

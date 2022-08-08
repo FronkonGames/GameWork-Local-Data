@@ -68,8 +68,12 @@ namespace FronkonGames.GameWork.Modules.LocalData
     public ClassData classData;
 
     public List<int> listValue;
-
     public Dictionary<int, string> dictValue;
+
+    public Vector2 vector2;
+    public Vector3 vector3;
+    public Vector4 vector4;
+    public Color color;
 
     public byte[] data;
 
@@ -111,6 +115,11 @@ namespace FronkonGames.GameWork.Modules.LocalData
         { 9, "Nine" },
       };
 
+      vector2 = Vector2.zero;
+      vector3 = Vector3.forward;
+      vector4 = Vector4.one;
+      color = Color.magenta;
+      
       data = new byte[size];
       bool random = false;
       for (int i = 0; i < size; ++i)

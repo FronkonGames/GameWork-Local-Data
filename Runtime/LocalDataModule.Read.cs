@@ -126,6 +126,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
 #endif
             {
               BinaryFormatter binaryFormatter = new();
+              AddSerializationSurrogates(binaryFormatter);
+              
               stream.Position = 0;
               data = binaryFormatter.Deserialize(stream) as T;
             }

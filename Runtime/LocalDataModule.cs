@@ -17,6 +17,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading;
 using UnityEngine;
 using FronkonGames.GameWork.Core;
@@ -303,6 +305,24 @@ namespace FronkonGames.GameWork.Modules.LocalData
       Check.IsNotNull(encryptor);
 
       return encryptor;
+    }
+
+    private static void AddSerializationSurrogates(IFormatter binaryFormatter)
+    {
+      SurrogateSelector surrogateSelector = new();
+      surrogateSelector.AddSurrogate(typeof(Bounds),     new StreamingContext(StreamingContextStates.All), new BoundsSerializationSurrogate());
+      surrogateSelector.AddSurrogate(typeof(Rect),       new StreamingContext(StreamingContextStates.All), new RectSerializationSurrogate());
+      surrogateSelector.AddSurrogate(typeof(LayerMask),  new StreamingContext(StreamingContextStates.All), new LayerMaskSerializationSurrogate());
+      surrogateSelector.AddSurrogate(typeof(Color),      new StreamingContext(StreamingContextStates.All), new ColorSerializationSurrogate());
+      surrogateSelector.AddSurrogate(typeof(Vector2Int), new StreamingContext(StreamingContextStates.All), new Vector2IntSerializationSurrogate());
+      surrogateSelector.AddSurrogate(typeof(Vector3Int), new StreamingContext(StreamingContextStates.All), new Vector2IntSerializationSurrogate());
+      surrogateSelector.AddSurrogate(typeof(Vector2),    new StreamingContext(StreamingContextStates.All), new Vector2SerializationSurrogate());
+      surrogateSelector.AddSurrogate(typeof(Vector3),    new StreamingContext(StreamingContextStates.All), new Vector3SerializationSurrogate());
+      surrogateSelector.AddSurrogate(typeof(Vector4),    new StreamingContext(StreamingContextStates.All), new Vector4SerializationSurrogate());
+      surrogateSelector.AddSurrogate(typeof(Quaternion), new StreamingContext(StreamingContextStates.All), new QuaternionSerializationSurrogate());
+      surrogateSelector.AddSurrogate(typeof(Matrix4x4),  new StreamingContext(StreamingContextStates.All), new Matrix4x4SerializationSurrogate());
+      
+      binaryFormatter.SurrogateSelector = surrogateSelector; 
     }
 
     private void CalculateProgress(float progress)
