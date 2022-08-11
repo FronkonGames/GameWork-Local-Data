@@ -54,9 +54,25 @@ features:
 }
 ```
 
+### Git
+
+First clone the dependencies inside your Assets folder:
+
+```
+git clone https://github.com/FronkonGames/GameWork-Foundation.git
+
+git clone https://github.com/FronkonGames/GameWork-Core.git
+```
+
+Then clone the repository:
+
+```
+git clone https://github.com/FronkonGames/GameWork-Local-Data.git
+```
+
 ## Use 🚀
 
-Create a class inheriting from ILocalData:
+Create a class inheriting from ILocalData and add the attribute _Serializable_:
 
 ```c#
 [Serializable]
@@ -85,6 +101,8 @@ localDataModule.Write(myLocalData, "Guy.brush", null, (result) =>
 To deserialise the file '_Guy.brush_' into an object:
 
 ```c#
+MyLocalData myLocaldata = null;
+
 localDataModule.Read<MyLocalData>("Guy.brush", null, (result, file) =>
 {
   if (result == FileResult.Ok)
