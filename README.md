@@ -1,4 +1,4 @@
-<p align="center"><img src="Documentation/Animation.gif" /></p>
+<p align="center"><img src="docs/Animation.gif" /></p>
 <p align="center"><b>Async Load/Save Local Data With Compression, Encryption And Integrity Check</b></p>
 <br>
 
@@ -37,8 +37,8 @@ features:
 
 ### Editing your 'manifest.json'
 
-  - Open the manifest.json file of your Unity project.
-  - In the section "dependencies" add:
+- Open the manifest.json file of your Unity project.
+- In the section "dependencies" add:
 
 ```c#
 {
