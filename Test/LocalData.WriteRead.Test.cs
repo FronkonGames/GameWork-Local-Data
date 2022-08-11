@@ -16,6 +16,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 using System;
 using System.Collections;
+using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using NUnit.Framework;
@@ -75,7 +76,17 @@ public class LocalDataTests
     LocalDataModule localDataModule = gameObject.AddComponent<LocalDataModule>();
     localDataModule.OnInitialize();
     localDataModule.OnInitialized();
-
+    
+    // @HACK: Set password and seed.
+    FieldInfo[] fields = localDataModule.GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance);
+    for (int i = 0; i < fields.Length; ++i)
+    {
+      if (fields[i].Name == "password")
+        fields[i].SetValue(localDataModule, "Abracadabra");
+      else if (fields[i].Name == "seed")
+        fields[i].SetValue(localDataModule, "HocusPocus");
+    }
+    
     yield return WriteTest(localDataModule, FileIntegrity.None, FileCompression.None, FileEncryption.None);
     yield return ReadTest(localDataModule);
     IntegrityTest();
@@ -111,6 +122,10 @@ public class LocalDataTests
   {
     float progress = 0.0f;
     FileResult fileResult = FileResult.Cancelled;
+
+    localDataModule.Integrity = integrity;
+    localDataModule.Compression = compression;
+    localDataModule.Encryption = encryption;
 
     Task task = localDataModule.Write(new TestLocalFile(), fileName, (value) => progress = value, (value) => fileResult = value);
     yield return AsIEnumeratorReturnNull(task);
