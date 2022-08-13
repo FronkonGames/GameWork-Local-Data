@@ -17,14 +17,15 @@
   </a>
 </p>
 
-'**Local Data**' is a module of '**Game:Work**' dedicated to read and write local files asynchronously. It has these
-features:
+'**Local Data**' is a module of '**Game:Work**' dedicated to read and write local files asynchronously.
 
-🔀 Fully asynchronous read, load and cancel.<br>
-🧬 Integrity check using MD5, SHA-1, SHA-256 or SHA-512 algorithms.<br>
-🗜️ Compression / decompression using algorithms: GZip, Zip or Brotli.<br>
-🔒 Encryption / decryption using algorithms: AES, DES, RC2, DES or TripleDES.<br>
-👌 Supports typical Unity data such as: Vector, Quaternion, Color, etc.
+## Features 🎇
+
+* Fully asynchronous read, load and cancel.<br>
+* Integrity check using MD5, SHA-1, SHA-256 or SHA-512 algorithms.<br>
+* Compression / decompression using algorithms: GZip, Zip or Brotli.<br>
+* Encryption / decryption using algorithms: AES, DES, RC2, DES or TripleDES.<br>
+* Supports typical Unity data such as: Vector, Quaternion, Color, etc.
 
 ## Requisites 🔧
 
@@ -33,7 +34,7 @@ features:
 - [Game:Work Foundation](https://github.com/FronkonGames/GameWork-Foundation).
 - Test Framework 1.1.31 or higher.
 
-## Installation ⚙️
+## Installation 📦️
 
 ### Editing your 'manifest.json'
 

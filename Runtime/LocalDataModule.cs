@@ -297,8 +297,8 @@ namespace FronkonGames.GameWork.Modules.LocalData
       {
         FileEncryption.None       => new NullEncryptor(),
         FileEncryption.AES        => new AESEncryptor(bufferSize, password, seed, cancellationToken),
-        FileEncryption.RC2        => new RC2Encryptor(bufferSize, password, string.Empty, cancellationToken),
-        FileEncryption.DES        => new DESEncryptor(bufferSize, password, string.Empty, cancellationToken),
+        FileEncryption.RC2        => new RC2Encryptor(bufferSize, password, seed, cancellationToken),
+        FileEncryption.DES        => new DESEncryptor(bufferSize, password, seed, cancellationToken),
         FileEncryption.TripleDES  => new TripleDESEncryptor(bufferSize, password, seed, cancellationToken),
         _ => null
       };

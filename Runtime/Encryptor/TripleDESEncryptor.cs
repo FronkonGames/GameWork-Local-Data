@@ -15,7 +15,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 using System.Security.Cryptography;
-using System.Text;
 using System.Threading;
 
 namespace FronkonGames.GameWork.Modules.LocalData
@@ -29,42 +28,20 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// Constructor.
     /// </summary>
     /// <param name="bufferSize">Buffer size, in kB</param>
-    /// <param name="password">Password.</param>
-    /// <param name="seed">Seed.</param>
+    /// <param name="password">Password, must be 16 characters or greater.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     public TripleDESEncryptor(int bufferSize, string password, string seed, CancellationToken cancellationToken)
       : base(bufferSize, password, seed, cancellationToken)
     {
-    }
-    
-    protected override ICryptoTransform CreateEncryptor()
-    {
       MD5CryptoServiceProvider md5CryptoServiceProvider = new();
-      byte[] key = md5CryptoServiceProvider.ComputeHash(Encoding.UTF8.GetBytes(password));
-
       TripleDESCryptoServiceProvider tripleDESProvider = new()
       {
-        Key = key,
+        Key = md5CryptoServiceProvider.ComputeHash(key),
         Mode = CipherMode.ECB,
         Padding = PaddingMode.PKCS7
       };
-
-      return tripleDESProvider.CreateEncryptor();
-    }
-
-    protected override ICryptoTransform CreateDecryptor()
-    {
-      MD5CryptoServiceProvider md5CryptoServiceProvider = new();
-      byte[] key = md5CryptoServiceProvider.ComputeHash(Encoding.UTF8.GetBytes(password));
-      
-      TripleDESCryptoServiceProvider tripleDESProvider = new()
-      {
-        Key = key,
-        Mode = CipherMode.ECB,
-        Padding = PaddingMode.PKCS7
-      };
-
-      return tripleDESProvider.CreateDecryptor();
+      Encryptor = tripleDESProvider.CreateEncryptor();
+      Decryptor = tripleDESProvider.CreateDecryptor();
     }
   }
 }

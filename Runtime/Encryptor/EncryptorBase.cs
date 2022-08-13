@@ -17,6 +17,7 @@
 using System;
 using System.IO;
 using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using FronkonGames.GameWork.Foundation;
@@ -28,22 +29,26 @@ namespace FronkonGames.GameWork.Modules.LocalData
   /// </summary>
   public abstract class EncryptorBase : IEncryptor
   {
-    private readonly byte[] buffer;
+    protected ICryptoTransform Encryptor { get; set; }
 
-    protected readonly string password;   // @TODO: Use SafeString.
-    protected readonly string seed;       // @TODO: Use SafeString.
+    protected ICryptoTransform Decryptor { get; set; }
+    
+    private readonly byte[] buffer;
 
     private readonly CancellationToken cancellationToken;
 
+    protected readonly byte[] key; // @TODO: Use SafeByte.
+    protected readonly byte[] IV;  // @TODO: Use SafeByte.
+    
     protected EncryptorBase(int bufferSize, string password, string seed = default, CancellationToken cancellationToken = default)
     {
       Check.Greater(bufferSize, 1);
       Check.IsNotNullOrEmpty(password);
 
       buffer = new byte[bufferSize * 1024];
+      key = Encoding.UTF8.GetBytes(password);
+      IV = string.IsNullOrEmpty(seed) ? key : Encoding.UTF8.GetBytes(seed);
 
-      this.password = password;
-      this.seed = seed;
       this.cancellationToken = cancellationToken;
     }
 
@@ -60,7 +65,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
       stream.Position = 0;
 
       MemoryStream encryptedStream = new();
-      CryptoStream cryptoStream = new(encryptedStream, CreateEncryptor(), CryptoStreamMode.Write);
+      CryptoStream cryptoStream = new(encryptedStream, Encryptor, CryptoStreamMode.Write);
 
       int bytesRead;
       int bytesReadTotal = 0;
@@ -98,7 +103,7 @@ namespace FronkonGames.GameWork.Modules.LocalData
       MemoryStream decryptedStream = new();
       await using MemoryStream encryptedStream = new(stream.ToArray());
       using AesCryptoServiceProvider aesProvider = new();
-      await using CryptoStream cryptoStream = new(encryptedStream, CreateDecryptor(), CryptoStreamMode.Read);
+      await using CryptoStream cryptoStream = new(encryptedStream, Decryptor, CryptoStreamMode.Read);
 
       int bytesRead;
       int bytesReadTotal = 0;
@@ -118,9 +123,5 @@ namespace FronkonGames.GameWork.Modules.LocalData
       
       return decryptedStream;
     }
-
-    protected abstract ICryptoTransform CreateEncryptor();
-
-    protected abstract ICryptoTransform CreateDecryptor();
   }
 }

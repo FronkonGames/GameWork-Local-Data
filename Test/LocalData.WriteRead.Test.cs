@@ -25,9 +25,9 @@ using FronkonGames.GameWork.Modules.LocalData;
 using UnityEngine;
 
 /// <summary>
-/// Write tests.
+/// Local Data tests.
 /// </summary>
-public class LocalDataTests
+public partial class LocalDataTests
 {
   [Serializable]
   private class TestLocalFile : LocalData
@@ -77,37 +77,7 @@ public class LocalDataTests
     localDataModule.OnInitialize();
     localDataModule.OnInitialized();
     
-    // @HACK: Set password and seed.
-    FieldInfo[] fields = localDataModule.GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance);
-    for (int i = 0; i < fields.Length; ++i)
-    {
-      if (fields[i].Name == "password")
-        fields[i].SetValue(localDataModule, "Abracadabra");
-      else if (fields[i].Name == "seed")
-        fields[i].SetValue(localDataModule, "HocusPocus");
-    }
-    
     yield return WriteTest(localDataModule, FileIntegrity.None, FileCompression.None, FileEncryption.None);
-    yield return ReadTest(localDataModule);
-    IntegrityTest();
-    DeleteTest(localDataModule);
-    
-    yield return WriteTest(localDataModule, FileIntegrity.MD5, FileCompression.None, FileEncryption.None);
-    yield return ReadTest(localDataModule);
-    IntegrityTest();
-    DeleteTest(localDataModule);
-
-    yield return WriteTest(localDataModule, FileIntegrity.None, FileCompression.Zip, FileEncryption.None);
-    yield return ReadTest(localDataModule);
-    IntegrityTest();
-    DeleteTest(localDataModule);
-
-    yield return WriteTest(localDataModule, FileIntegrity.None, FileCompression.None, FileEncryption.AES);
-    yield return ReadTest(localDataModule);
-    IntegrityTest();
-    DeleteTest(localDataModule);
-
-    yield return WriteTest(localDataModule, FileIntegrity.MD5, FileCompression.Zip, FileEncryption.AES);
     yield return ReadTest(localDataModule);
     IntegrityTest();
     DeleteTest(localDataModule);
@@ -183,10 +153,23 @@ public class LocalDataTests
     Assert.AreEqual(localFile.color, Color.magenta);
   }
   
-  private void DeleteTest(LocalDataModule localDataModule)
+  private static void DeleteTest(LocalDataModule localDataModule)
   {
     localDataModule.Delete(fileName);
     Assert.IsFalse(localDataModule.Exists(fileName));
+  }
+
+  private static void SetPassword(LocalDataModule localDataModule, string password, string seed)
+  {
+    // @HACK: Set password and seed.
+    FieldInfo[] fields = localDataModule.GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance);
+    for (int i = 0; i < fields.Length; ++i)
+    {
+      if (fields[i].Name == "password")
+        fields[i].SetValue(localDataModule, password);
+      else if (fields[i].Name == "seed")
+        fields[i].SetValue(localDataModule, seed);
+    }
   }
 
   private static IEnumerator AsIEnumeratorReturnNull(Task task)

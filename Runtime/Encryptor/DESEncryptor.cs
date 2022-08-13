@@ -15,8 +15,8 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 using System.Security.Cryptography;
-using System.Text;
 using System.Threading;
+using FronkonGames.GameWork.Foundation;
 
 namespace FronkonGames.GameWork.Modules.LocalData
 {
@@ -29,30 +29,17 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// Constructor.
     /// </summary>
     /// <param name="bufferSize">Buffer size, in kB</param>
-    /// <param name="password">Password.</param>
+    /// <param name="password">Password, must be 8 characters.</param>
     /// <param name="seed">Seed.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     public DESEncryptor(int bufferSize, string password, string seed, CancellationToken cancellationToken)
       : base(bufferSize, password, seed, cancellationToken)
     {
-    }
-    
-    protected override ICryptoTransform CreateEncryptor()
-    {
-      byte[] key = Encoding.UTF8.GetBytes(password);
+      Check.Equal(password.Length, 8);
       
       DESCryptoServiceProvider desProvider = new();
-
-      return desProvider.CreateEncryptor(key, key);
-    }
-
-    protected override ICryptoTransform CreateDecryptor()
-    {
-      byte[] key = Encoding.UTF8.GetBytes(password);
-      
-      DESCryptoServiceProvider desProvider = new();
-
-      return desProvider.CreateDecryptor(key, key);
+      Encryptor = desProvider.CreateEncryptor(key, IV);
+      Decryptor = desProvider.CreateDecryptor(key, IV);
     }
   }
 }

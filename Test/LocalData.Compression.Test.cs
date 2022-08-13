@@ -14,28 +14,45 @@
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-using System.Threading;
-using System.Security.Cryptography;
+using System.Collections;
+using UnityEngine.TestTools;
+using FronkonGames.GameWork.Modules.LocalData;
+using UnityEngine;
 
-namespace FronkonGames.GameWork.Modules.LocalData
+/// <summary>
+/// Local Data tests.
+/// </summary>
+public partial class LocalDataTests
 {
   /// <summary>
-  /// RC2 encryptor.
+  /// Compression test.
   /// </summary>
-  public sealed class RC2Encryptor : EncryptorBase
+  [UnityTest]
+  public IEnumerator Compression()
   {
-    /// <summary>
-    /// Constructor.
-    /// </summary>
-    /// <param name="bufferSize">Buffer size, in kB</param>
-    /// <param name="password">Password, must be 16 characters or greater.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    public RC2Encryptor(int bufferSize, string password, string seed, CancellationToken cancellationToken)
-      : base(bufferSize, password, seed, cancellationToken)
-    {
-      RC2CryptoServiceProvider rc2Provider = new();
-      Encryptor = rc2Provider.CreateEncryptor(key, IV); 
-      Decryptor = rc2Provider.CreateDecryptor(key, IV); 
-    }
+    GameObject gameObject = new();
+    LocalDataModule localDataModule = gameObject.AddComponent<LocalDataModule>();
+    localDataModule.OnInitialize();
+    localDataModule.OnInitialized();
+    
+    yield return WriteTest(localDataModule, FileIntegrity.None, FileCompression.Zip, FileEncryption.None);
+    yield return ReadTest(localDataModule);
+    IntegrityTest();
+    DeleteTest(localDataModule);
+
+    yield return WriteTest(localDataModule, FileIntegrity.None, FileCompression.GZip, FileEncryption.None);
+    yield return ReadTest(localDataModule);
+    IntegrityTest();
+    DeleteTest(localDataModule);
+
+    yield return WriteTest(localDataModule, FileIntegrity.None, FileCompression.Brotli, FileEncryption.None);
+    yield return ReadTest(localDataModule);
+    IntegrityTest();
+    DeleteTest(localDataModule);
+
+    localDataModule.OnDeinitialize();
+    GameObject.DestroyImmediate(gameObject);
+
+    yield return null;
   }
 }

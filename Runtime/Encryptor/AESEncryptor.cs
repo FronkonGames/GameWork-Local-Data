@@ -15,7 +15,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 using System.Security.Cryptography;
-using System.Text;
 using System.Threading;
 
 namespace FronkonGames.GameWork.Modules.LocalData
@@ -29,34 +28,19 @@ namespace FronkonGames.GameWork.Modules.LocalData
     /// Constructor.
     /// </summary>
     /// <param name="bufferSize">Buffer size, in kB</param>
-    /// <param name="password">Password.</param>
+    /// <param name="password">Password, must be 16 characters or greater.</param>
     /// <param name="seed">Seed.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     public AESEncryptor(int bufferSize, string password, string seed, CancellationToken cancellationToken)
       : base(bufferSize, password, seed, cancellationToken)
     {
-    }
-    
-    protected override ICryptoTransform CreateEncryptor()
-    {
-      Rfc2898DeriveBytes rfc = new(password, Encoding.ASCII.GetBytes(seed));
+      Rfc2898DeriveBytes rfc = new(password, IV);
       byte[] key = rfc.GetBytes(16);
       byte[] iv = rfc.GetBytes(16);
       
       AesCryptoServiceProvider aesProvider = new();
-
-      return aesProvider.CreateEncryptor(key, iv);
-    }
-
-    protected override ICryptoTransform CreateDecryptor()
-    {
-      Rfc2898DeriveBytes rfc = new(password, Encoding.ASCII.GetBytes(seed));
-      byte[] key = rfc.GetBytes(16);
-      byte[] iv = rfc.GetBytes(16);
-      
-      AesCryptoServiceProvider aesProvider = new();
-
-      return aesProvider.CreateDecryptor(key, iv);
+      Encryptor = aesProvider.CreateEncryptor(key, iv);
+      Decryptor = aesProvider.CreateDecryptor(key, iv);
     }
   }
 }
